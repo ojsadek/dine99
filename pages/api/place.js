@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   const fields = [
     "name", "formatted_address", "formatted_phone_number", "website",
     "rating", "user_ratings_total", "price_level", "opening_hours",
-    "geometry", "url", "photos",
+    "geometry", "url", "photos", "reviews",
   ].join(",");
 
   const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${id}&fields=${fields}&key=${key}`;
@@ -36,6 +36,14 @@ export default async function handler(req, res) {
       lng: p.geometry?.location?.lng ?? null,
       mapsUrl: p.url || null,
       photoRef: p.photos?.[0]?.photo_reference || null,
+      photos: (p.photos || []).slice(0, 8).map((ph) => ph.photo_reference),
+      reviews: (p.reviews || []).slice(0, 6).map((rv) => ({
+        author: rv.author_name,
+        rating: rv.rating,
+        when: rv.relative_time_description,
+        text: rv.text,
+        avatar: rv.profile_photo_url || null,
+      })),
     },
   });
 }

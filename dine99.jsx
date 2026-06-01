@@ -27,14 +27,6 @@ const FOODS = [
 ];
 const CATS = ["All", "Burgers", "Chicken", "Classics", "Pizza", "Mexican", "Mediterranean", "Sides"];
 
-// Clean, consistent emoji per item — replaces generic stock photos on tiles.
-const EMOJI = {
-  hamburger: "🍔", cheeseburger: "🍔", "grilled-chicken-sandwich": "🍗",
-  "fried-chicken-sandwich": "🍗", "chicken-wings": "🍗", "italian-beef": "🥪",
-  "philly-cheesesteak": "🥖", "hot-dog": "🌭", "pizza-slice": "🍕", "pizza-14": "🍕",
-  tacos: "🌮", burrito: "🌯", shawarma: "🥙", gyros: "🥙", "french-fries": "🍟",
-  "onion-rings": "🧅",
-};
 // Soft pastel gradient per category — warm, designed, on-brand.
 const CAT_GRAD = {
   Burgers: ["#ffe6c2", "#ffcf9e"],
@@ -141,6 +133,24 @@ const Pin = () => (<svg viewBox="0 0 24 24" width="15" height="15" fill="none" s
 const Heart = ({ filled }) => (<svg viewBox="0 0 24 24" width="20" height="20" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.5 1-1a5.5 5.5 0 0 0 0-7.9z" /></svg>);
 const SearchI = () => null;
 const Back = () => (<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>);
+
+// Clean line icons per category — replace emoji until real photos load.
+const ICON_PATHS = {
+  Burgers: <><path d="M5 10a7 7 0 0 1 14 0H5z"/><path d="M4 13.2h16"/><path d="M6 16h12a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z"/></>,
+  Chicken: <><circle cx="14.5" cy="9.5" r="4.5"/><path d="M11.3 12.7 6 18m0 0-2.2.6L4.4 21 6 18zm0 0 .6 2.2"/></>,
+  Pizza: <><path d="M12 21 4.5 7.5a17 17 0 0 1 15 0L12 21z"/><circle cx="10" cy="10.5" r=".9" fill="currentColor" stroke="none"/><circle cx="13.5" cy="13" r=".9" fill="currentColor" stroke="none"/></>,
+  Mexican: <><path d="M3.5 17a8.5 8.5 0 0 1 17 0H3.5z"/><path d="M3.5 17h17"/></>,
+  Mediterranean: <><line x1="5.5" y1="18.5" x2="18.5" y2="5.5"/><circle cx="9.5" cy="12.5" r="1.8"/><circle cx="13" cy="9" r="1.8"/></>,
+  Sides: <><path d="M7 9l.7-3 2 .6M10 8.5 11.8 5l2 .8M14 8.2 16.5 6l1.6 1.6"/><path d="M5.5 9h13l-1.4 9.3a2 2 0 0 1-2 1.7H8.9a2 2 0 0 1-2-1.7z"/></>,
+  default: <><path d="M7 3v8M9.5 3v8M7 11v8M9.5 11v8M8.25 3v16"/><path d="M16 3c-1.6 1-2.2 3-2.2 5.2 0 1.7 1 2.8 2.2 2.8v8"/></>,
+};
+const FoodIcon = ({ cat, size = 52 }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    {ICON_PATHS[cat] || ICON_PATHS.default}
+  </svg>
+);
+
+const MAPS_EMBED_KEY = process.env.NEXT_PUBLIC_MAPS_EMBED_KEY;
 
 const NeonBig = () => <span className="neon"><span className="neon-d">DINE</span><span className="neon-99">99</span></span>;
 const NeonSm = () => <span className="neon sm"><span className="neon-d">DINE</span><span className="neon-99">99</span></span>;
@@ -249,7 +259,7 @@ export default function Dine99() {
     const food = FOODS.find((f) => f.id === selectedFood);
     setLoading(true);
     setApiResults(null);
-    fetch(`/api/search?lat=${userLoc.lat}&lng=${userLoc.lng}&radius=16000&keyword=${encodeURIComponent(food.name)}`)
+    fetch(`/api/search?lat=${userLoc.lat}&lng=${userLoc.lng}&radius=32187&keyword=${encodeURIComponent(food.name)}`)
       .then((r) => r.json())
       .then((d) => {
         if (!d.places?.length) return; // fall back to sample data
@@ -274,7 +284,7 @@ export default function Dine99() {
     let cancelled = false;
     setTilePhotos({});
     FOODS.forEach((food) => {
-      fetch(`/api/search?lat=${userLoc.lat}&lng=${userLoc.lng}&radius=16000&keyword=${encodeURIComponent(food.name)}`)
+      fetch(`/api/search?lat=${userLoc.lat}&lng=${userLoc.lng}&radius=32187&keyword=${encodeURIComponent(food.name)}`)
         .then((r) => r.json())
         .then((d) => {
           if (cancelled || !d.places?.length) return;
@@ -402,7 +412,7 @@ export default function Dine99() {
                     <div className="fcard-img" style={{ backgroundImage: gradFor(f) }}>
                       {tilePhotos[f.id]
                         ? <img className="fimg tile-photo" loading="lazy" alt={f.name} src={tilePhotos[f.id]} />
-                        : <span className="tile-emoji">{EMOJI[f.id]}</span>}
+                        : <span className="tile-icon"><FoodIcon cat={f.cat} /></span>}
                     </div>
                     <div className="fcard-txt">
                       <span className="fcard-name">{f.name}</span>
@@ -437,7 +447,7 @@ export default function Dine99() {
         <div className="container results slide">
           <div className="reshead">
             <button className="circ" onClick={() => setSelectedFood(null)}><Back /></button>
-            <div className="reshead-img" style={{ backgroundImage: gradFor(foodObj) }}><span className="tile-emoji sm">{EMOJI[foodObj.id]}</span></div>
+            <div className="reshead-img" style={{ backgroundImage: gradFor(foodObj) }}><span className="tile-icon"><FoodIcon cat={foodObj.cat} size={30} /></span></div>
             <div className="reshead-t">
               <h2>{foodObj.name}</h2>
               <span>{results.length} spots near you · avg ${avg ? avg.toFixed(2) : "—"}</span>
@@ -453,8 +463,8 @@ export default function Dine99() {
             </div>
             <div className="dist">
               <span className="dist-lbl">Distance</span>
-              {[["1", 1], ["3", 3], ["5", 5], ["10", 10], ["Any", 12]].map(([l, v]) => (
-                <button key={l} className={`dchip ${range === v ? "on" : ""}`} onClick={() => setRange(v)}>{l === "Any" ? "Any" : `${l} mi`}</button>
+              {[1, 3, 5, 10, 20].map((v) => (
+                <button key={v} className={`dchip ${range === v ? "on" : ""}`} onClick={() => setRange(v)}>{v} mi</button>
               ))}
             </div>
           </div>
@@ -477,7 +487,7 @@ export default function Dine99() {
                     <div className="vspot-img">
                       {r.imgUrl
                         ? <img className="fimg" loading="lazy" alt={r.name} src={r.imgUrl} />
-                        : <div className="fimg tile" style={{ backgroundImage: gradFor(foodObj) }}><span className="tile-emoji sm">{EMOJI[foodObj.id]}</span></div>
+                        : <div className="fimg tile" style={{ backgroundImage: gradFor(foodObj) }}><span className="tile-icon"><FoodIcon cat={foodObj.cat} size={40} /></span></div>
                       }
                       {best && <span className="v-badge">★ BEST PRICE</span>}
                       <span className={`v-heart ${favs[r.id] ? "on" : ""}`} onClick={(e) => { e.stopPropagation(); toggleFav(r); }}><Heart filled={!!favs[r.id]} /></span>
@@ -514,7 +524,7 @@ export default function Dine99() {
                     <div className="vspot-img" onClick={() => openFood(r.foodId)} style={{ cursor: "pointer" }}>
                       {r.imgUrl
                         ? <img className="fimg" loading="lazy" alt={r.name} src={r.imgUrl} />
-                        : <div className="fimg tile" style={{ backgroundImage: gradFor(food) }}><span className="tile-emoji sm">{EMOJI[food.id]}</span></div>
+                        : <div className="fimg tile" style={{ backgroundImage: gradFor(food) }}><span className="tile-icon"><FoodIcon cat={food.cat} size={40} /></span></div>
                       }
                       <span className="v-heart on" onClick={(e) => { e.stopPropagation(); toggleFav(r); }}><Heart filled /></span>
                     </div>
@@ -531,85 +541,133 @@ export default function Dine99() {
         </div>
       )}
 
-      {/* ============ RESTAURANT DETAIL MODAL ============ */}
-      {spot && (
-        <div className="modal-bg" onClick={closeSpot}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-x" onClick={closeSpot} aria-label="Close">✕</button>
-
-            <div className="md-head">
-              {(detail?.photoRef || spot.imgUrl)
-                ? <img className="md-img" alt={spot.name} src={detail?.photoRef ? `/api/photo?ref=${encodeURIComponent(detail.photoRef)}&w=600` : spot.imgUrl} />
-                : <div className="md-img tile" style={{ backgroundImage: gradFor(FOODS.find((f)=>f.id===spot.foodId)) }}><span className="tile-emoji">{EMOJI[spot.foodId]}</span></div>}
+      {/* ============ RESTAURANT DETAIL — FLOATING PANEL ============ */}
+      {spot && (() => {
+        const food = FOODS.find((f) => f.id === spot.foodId);
+        const q = encodeURIComponent(`${spot.name} ${userLoc?.city || ""}`.trim());
+        const dirUrl = `https://www.google.com/maps/dir/?api=1&destination=${detail?.lat && detail?.lng ? `${detail.lat},${detail.lng}` : encodeURIComponent(spot.name)}&destination_place_id=${spot.id}`;
+        const goSec = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return (
+        <div className="sheet-bg" onClick={closeSpot}>
+          <div className="sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-top">
+              <div className="sheet-grab" />
+              <button className="sheet-x" onClick={closeSpot} aria-label="Close">✕</button>
+              <div className="sheet-title">
+                <h2>{spot.name}</h2>
+                <span className="sheet-sub"><span className="sstar"><Star /> {spot.rating || "—"}</span>
+                  {detail?.reviews?.length ? <><span className="mdot">•</span>{detail.reviews.length}+ reviews</> : null}
+                  <span className="mdot">•</span>{spot.distance} mi
+                  {detail?.open != null && <><span className="mdot">•</span><em className={detail.open ? "op" : "cl"}>{detail.open ? "Open" : "Closed"}</em></>}
+                </span>
+              </div>
+              <nav className="sheet-nav">
+                {[["sec-info","Info"],["sec-map","Map"],["sec-order","Order"],["sec-reviews","Reviews"],["sec-photos","Photos"]].map(([id,l]) => (
+                  <button key={id} onClick={() => goSec(id)}>{l}</button>
+                ))}
+              </nav>
             </div>
 
-            <div className="md-body">
-              <h2 className="md-name">{spot.name}</h2>
-              <div className="md-meta">
-                <span className="sstar"><Star /> {spot.rating || "—"}</span>
-                {detail?.reviews ? <><span className="mdot">•</span>{detail.reviews} reviews</> : null}
-                <span className="mdot">•</span>{spot.distance} mi
-                {detail?.open != null && <><span className="mdot">•</span><em className={detail.open ? "op" : "cl"}>{detail.open ? "Open now" : "Closed"}</em></>}
-              </div>
-
-              <div className="md-price-row">
-                <div>
+            <div className="sheet-scroll">
+              {/* INFO */}
+              <section id="sec-info" className="sec-pane">
+                <h3 className="pane-h">Details</h3>
+                <div className="md-price-row">
                   <span className="md-price">${spot.price.toFixed(2)}</span>
-                  <span className="md-price-lbl"> est. for {FOODS.find((f)=>f.id===spot.foodId)?.name}</span>
+                  <span className="md-price-lbl">est. for {food?.name}</span>
                 </div>
-              </div>
-
-              {detailLoading && <p className="md-loading">Loading details…</p>}
-
-              {detail && (
+                {detailLoading && <p className="md-loading">Loading details…</p>}
                 <div className="md-info">
-                  {detail.address && <div className="md-row"><Pin /> <span>{detail.address}</span></div>}
-                  {detail.phone && <div className="md-row"><span className="md-ic">📞</span> <a href={`tel:${detail.phone}`}>{detail.phone}</a></div>}
-                  {detail.website && <div className="md-row"><span className="md-ic">🌐</span> <a href={detail.website} target="_blank" rel="noreferrer">Website</a></div>}
-                  {detail.hours && (
-                    <details className="md-hours">
-                      <summary>Hours</summary>
+                  {detail?.address && <div className="md-row"><Pin /> <span>{detail.address}</span></div>}
+                  {detail?.phone && <div className="md-row"><span className="md-ic">☎</span> <a href={`tel:${detail.phone}`}>{detail.phone}</a></div>}
+                  {detail?.website && <div className="md-row"><span className="md-ic">↗</span> <a href={detail.website} target="_blank" rel="noreferrer">Visit website</a></div>}
+                  {detail?.hours && (
+                    <details className="md-hours"><summary>Opening hours</summary>
                       <ul>{detail.hours.map((h, i) => <li key={i}>{h}</li>)}</ul>
                     </details>
                   )}
                 </div>
-              )}
-
-              <div className="md-actions">
-                <a
-                  className="md-btn primary"
-                  href={`https://www.google.com/maps/dir/?api=1&destination=${detail?.lat && detail?.lng ? `${detail.lat},${detail.lng}` : encodeURIComponent(spot.name)}&destination_place_id=${spot.id}`}
-                  target="_blank" rel="noreferrer"
-                ><Pin /> Get directions</a>
-                <button className="md-btn ghost" onClick={() => { setReportOpen((o) => !o); setReportState(""); }}>
-                  Report a price
-                </button>
-              </div>
-
-              {reportOpen && (
-                reportState === "done" ? (
+                <div className="md-actions">
+                  <a className="md-btn primary" href={dirUrl} target="_blank" rel="noreferrer"><Pin /> Directions</a>
+                  <button className="md-btn ghost" onClick={() => { setReportOpen((o) => !o); setReportState(""); }}>Report a price</button>
+                </div>
+                {reportOpen && (reportState === "done" ? (
                   <div className="report done">✓ Thanks! Your price report was submitted for review.</div>
                 ) : (
                   <form className="report" onSubmit={submitReport}>
-                    <p className="report-q">What price did you see for {FOODS.find((f)=>f.id===spot.foodId)?.name.toLowerCase()}?</p>
+                    <p className="report-q">What price did you see for {food?.name.toLowerCase()}?</p>
                     <div className="report-row">
                       <span className="report-dollar">$</span>
-                      <input className="report-price" type="number" step="0.01" min="0" placeholder="0.00"
-                        value={reportPrice} onChange={(e) => setReportPrice(e.target.value)} autoFocus />
-                      <button className="md-btn primary sm" type="submit" disabled={reportState === "sending"}>
-                        {reportState === "sending" ? "Sending…" : "Submit"}
-                      </button>
+                      <input className="report-price" type="number" step="0.01" min="0" placeholder="0.00" value={reportPrice} onChange={(e) => setReportPrice(e.target.value)} autoFocus />
+                      <button className="md-btn primary sm" type="submit" disabled={reportState === "sending"}>{reportState === "sending" ? "…" : "Submit"}</button>
                     </div>
-                    <input className="report-note" placeholder="Note (optional) — e.g. lunch special, size…"
-                      value={reportNote} onChange={(e) => setReportNote(e.target.value)} />
+                    <input className="report-note" placeholder="Note (optional) — size, special…" value={reportNote} onChange={(e) => setReportNote(e.target.value)} />
                     {reportState === "error" && <p className="report-err">Enter a valid price and try again.</p>}
                   </form>
-                )
-              )}
+                ))}
+              </section>
+
+              {/* MAP */}
+              <section id="sec-map" className="sec-pane">
+                <h3 className="pane-h">Map</h3>
+                {MAPS_EMBED_KEY ? (
+                  <iframe className="sheet-map" title="map" loading="lazy" allowFullScreen
+                    src={`https://www.google.com/maps/embed/v1/place?key=${MAPS_EMBED_KEY}&q=place_id:${spot.id}`} />
+                ) : (
+                  <a className="map-fallback" href={detail?.mapsUrl || dirUrl} target="_blank" rel="noreferrer">
+                    <Pin /><span>Open in Google Maps</span>
+                  </a>
+                )}
+              </section>
+
+              {/* ORDER */}
+              <section id="sec-order" className="sec-pane">
+                <h3 className="pane-h">Order &amp; contact</h3>
+                <div className="order-grid">
+                  <a className="order-btn" href={`https://www.doordash.com/search/store/${q}`} target="_blank" rel="noreferrer"><b>DoorDash</b><span>Search</span></a>
+                  <a className="order-btn" href={`https://www.ubereats.com/search?q=${q}`} target="_blank" rel="noreferrer"><b>Uber Eats</b><span>Search</span></a>
+                  <a className="order-btn" href={`https://www.toasttab.com/local?q=${q}`} target="_blank" rel="noreferrer"><b>Toast</b><span>Search</span></a>
+                  {detail?.phone
+                    ? <a className="order-btn" href={`tel:${detail.phone}`}><b>Call</b><span>{detail.phone}</span></a>
+                    : <span className="order-btn off"><b>Call</b><span>—</span></span>}
+                </div>
+                <p className="order-note">Links open a search for this restaurant on each platform — availability varies.</p>
+              </section>
+
+              {/* REVIEWS */}
+              <section id="sec-reviews" className="sec-pane">
+                <h3 className="pane-h">Reviews <span className="pane-src">via Google</span></h3>
+                {detailLoading && <p className="md-loading">Loading…</p>}
+                {detail && (!detail.reviews || detail.reviews.length === 0) && <p className="md-loading">No reviews available.</p>}
+                <div className="rev-list">
+                  {detail?.reviews?.map((rv, i) => (
+                    <div key={i} className="rev">
+                      <div className="rev-top">
+                        {rv.avatar ? <img className="rev-av" src={rv.avatar} alt="" /> : <span className="rev-av ph">{rv.author?.[0] || "?"}</span>}
+                        <div><div className="rev-name">{rv.author}</div><div className="rev-when">{rv.when}</div></div>
+                        <span className="rev-rating"><Star /> {rv.rating}</span>
+                      </div>
+                      <p className="rev-text">{rv.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* PHOTOS */}
+              <section id="sec-photos" className="sec-pane">
+                <h3 className="pane-h">Photos <span className="pane-src">via Google</span></h3>
+                {detail && (!detail.photos || detail.photos.length === 0) && <p className="md-loading">No photos available.</p>}
+                <div className="photo-grid">
+                  {detail?.photos?.map((ref, i) => (
+                    <img key={i} className="photo-cell" loading="lazy" alt="" src={`/api/photo?ref=${encodeURIComponent(ref)}&w=500`} />
+                  ))}
+                </div>
+              </section>
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
@@ -654,11 +712,9 @@ const CSS = `
 .brand .neon.sm { font-size: 20px; }
 .foot .neon.sm { font-size: 18px; }
 
-/* ---------- EMOJI TILES ---------- */
-.tile-emoji { font-size: 54px; line-height: 1; filter: drop-shadow(0 3px 6px rgba(80,50,20,.18)); }
-.tile-emoji.sm { font-size: 42px; }
-.fcard-img, .vspot-img .tile, .reshead-img { display: grid; place-items: center; }
-.reshead-img .tile-emoji { font-size: 30px; }
+/* ---------- ICON TILES ---------- */
+.tile-icon { display: grid; place-items: center; color: rgba(90,55,25,.5); }
+.fcard-img, .vspot-img .tile, .reshead-img, .md-img.tile { display: grid; place-items: center; }
 
 .fimg { display: block; object-fit: cover; width: 100%; height: 100%; background: var(--surface2); }
 .fimg.fb { display: grid; place-items: center; background: linear-gradient(135deg, hsl(calc(var(--g) * 1deg) 60% 88%), hsl(calc(var(--g) * 1deg + 40) 55% 80%)); }
@@ -836,18 +892,25 @@ const CSS = `
 .tile-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: fade .3s ease; }
 .vspot { cursor: pointer; }
 
-/* ---------- MODAL ---------- */
-.modal-bg { position: fixed; inset: 0; z-index: 100; background: rgba(20,14,8,.5); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fade .18s ease; }
-.modal { position: relative; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; background: var(--surface); border-radius: 20px; box-shadow: 0 30px 80px rgba(20,14,8,.4); animation: pop .25s ease both; }
-.modal-x { position: absolute; top: 12px; right: 12px; z-index: 2; width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(0,0,0,.45); color: #fff; font-size: 14px; cursor: pointer; display: grid; place-items: center; }
-.modal-x:hover { background: rgba(0,0,0,.65); }
-.md-head { height: 180px; overflow: hidden; border-radius: 20px 20px 0 0; }
-.md-img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.md-img.tile { display: grid; place-items: center; }
-.md-body { padding: 18px 20px 22px; }
-.md-name { font-family: 'Inter'; font-weight: 700; font-size: 22px; letter-spacing: -.02em; margin: 0 0 6px; color: var(--text); }
-.md-meta { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text2); font-weight: 500; flex-wrap: wrap; margin-bottom: 14px; }
-.md-meta .op { color: var(--teal); font-weight: 600; } .md-meta .cl { color: var(--red); font-weight: 600; }
+/* ---------- FLOATING SHEET ---------- */
+.sheet-bg { position: fixed; inset: 0; z-index: 100; background: rgba(20,14,8,.5); backdrop-filter: blur(3px); display: flex; align-items: flex-end; justify-content: center; animation: fade .18s ease; }
+.sheet { position: relative; width: 100%; max-width: 560px; height: 88vh; background: var(--surface); border-radius: 22px 22px 0 0; box-shadow: 0 -10px 60px rgba(20,14,8,.4); display: flex; flex-direction: column; overflow: hidden; animation: sheetup .28s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes sheetup { from { transform: translateY(100%); } }
+.sheet-top { position: relative; padding: 10px 20px 0; border-bottom: 1px solid var(--border); }
+.sheet-grab { width: 38px; height: 4px; border-radius: 999px; background: var(--border-hi); margin: 2px auto 12px; }
+.sheet-x { position: absolute; top: 12px; right: 16px; width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--surface2); color: var(--text2); font-size: 13px; cursor: pointer; display: grid; place-items: center; }
+.sheet-x:hover { background: var(--border-hi); }
+.sheet-title h2 { font-family: 'Inter'; font-weight: 700; font-size: 21px; letter-spacing: -.02em; margin: 0 40px 4px 0; color: var(--text); }
+.sheet-sub { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text2); font-weight: 500; flex-wrap: wrap; }
+.sheet-sub .op { color: var(--teal); font-weight: 600; } .sheet-sub .cl { color: var(--red); font-weight: 600; }
+.sheet-nav { display: flex; gap: 4px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; }
+.sheet-nav::-webkit-scrollbar { display: none; }
+.sheet-nav button { flex: 0 0 auto; background: none; border: none; border-bottom: 2px solid transparent; padding: 8px 10px; font-family: 'Inter'; font-weight: 600; font-size: 13.5px; color: var(--text2); cursor: pointer; transition: color .15s, border-color .15s; }
+.sheet-nav button:hover { color: var(--text); }
+.sheet-scroll { flex: 1; overflow-y: auto; scroll-snap-type: y mandatory; }
+.sec-pane { scroll-snap-align: start; scroll-snap-stop: always; min-height: 100%; padding: 22px 20px 28px; border-bottom: 8px solid var(--bg); display: flex; flex-direction: column; }
+.pane-h { font-family: 'Inter'; font-weight: 700; font-size: 17px; letter-spacing: -.01em; color: var(--text); margin: 0 0 14px; }
+.pane-src { font-weight: 500; font-size: 12px; color: var(--muted); }
 .md-price-row { display: flex; align-items: baseline; gap: 8px; padding: 12px 14px; background: var(--surface2); border-radius: 12px; margin-bottom: 14px; }
 .md-price { font-family: 'Inter'; font-weight: 800; font-size: 24px; color: var(--text); letter-spacing: -.02em; }
 .md-price-lbl { font-size: 12.5px; color: var(--text2); font-weight: 500; }
@@ -880,6 +943,31 @@ const CSS = `
 .report-note { width: 100%; margin-top: 10px; background: var(--surface); border: 1px solid var(--border-hi); border-radius: 9px; padding: 9px 12px; font-family: 'Inter'; font-size: 13px; color: var(--text); outline: none; }
 .report-note:focus { border-color: var(--teal); }
 .report-err { margin: 8px 0 0; color: var(--red); font-size: 12.5px; font-family: 'Inter'; }
+
+/* ---------- SHEET SECTIONS: map / order / reviews / photos ---------- */
+.sheet-map { flex: 1; width: 100%; min-height: 320px; border: 0; border-radius: 14px; }
+.map-fallback { flex: 1; min-height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: var(--surface2); border-radius: 14px; color: var(--text); font-family: 'Inter'; font-weight: 600; font-size: 15px; text-decoration: none; }
+.map-fallback svg { width: 26px; height: 26px; color: var(--red); }
+.order-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.order-btn { display: flex; flex-direction: column; gap: 3px; padding: 16px; border: 1px solid var(--border-hi); border-radius: 14px; background: var(--surface); text-decoration: none; transition: all .15s; }
+.order-btn:hover { border-color: var(--text2); transform: translateY(-2px); }
+.order-btn b { font-family: 'Inter'; font-weight: 700; font-size: 15px; color: var(--text); }
+.order-btn span { font-family: 'Inter'; font-size: 12px; color: var(--text2); }
+.order-btn.off { opacity: .5; }
+.order-note { margin: 14px 0 0; font-size: 12px; color: var(--muted); font-family: 'Inter'; line-height: 1.5; }
+.rev-list { display: flex; flex-direction: column; gap: 16px; }
+.rev { border-bottom: 1px solid var(--border); padding-bottom: 14px; }
+.rev:last-child { border-bottom: none; }
+.rev-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.rev-av { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; }
+.rev-av.ph { display: grid; place-items: center; background: var(--surface2); color: var(--text2); font-weight: 700; font-family: 'Inter'; }
+.rev-name { font-family: 'Inter'; font-weight: 600; font-size: 14px; color: var(--text); }
+.rev-when { font-size: 12px; color: var(--muted); }
+.rev-rating { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; font-family: 'Inter'; font-weight: 700; font-size: 13px; color: var(--text); }
+.rev-rating svg { color: var(--yellow); }
+.rev-text { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--text2); font-family: 'Inter'; }
+.photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.photo-cell { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; background: var(--surface2); }
 
 /* ---------- RESPONSIVE ---------- */
 @media (max-width: 620px) {
