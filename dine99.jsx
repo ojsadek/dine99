@@ -429,7 +429,7 @@ export default function Dine99() {
             <div className="foot-in">
               <span className="sign sign-sm"><NeonSm /></span>
               <div className="foot-cols">
-                <p className="foot-disc">Prices are estimates and may not be current or available at all locations. Always confirm with the restaurant. Listings &amp; photos via Google Places.</p>
+                <p className="foot-disc">Prices are estimates and may not be current or available at all locations. Always confirm with the restaurant. Listings via Google Places · food photos via <a href="https://www.pexels.com" target="_blank" rel="noreferrer">Pexels</a>.</p>
                 <div className="foot-links">
                   <a href="mailto:report@dine99.app?subject=DINE%2099%20issue%20report">Report an issue</a>
                   <span className="foot-dot">·</span>
