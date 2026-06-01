@@ -267,7 +267,7 @@ export default function Dine99() {
             <div className="hero-in">
               <span className="hero-open">◗ OPEN 24 HRS ◖</span>
               <NeonBig />
-              <span className="hero-tag">Good eats · best prices · near you</span>
+              <span className="hero-tag">Food you crave at the price you desire</span>
             </div>
             <div className="hero-floor" />
           </section>
