@@ -477,7 +477,7 @@ export default function Dine99() {
               <h2>{foodObj.name}</h2>
               <span>{loading ? "Searching nearby…" : `${results.length} spot${results.length === 1 ? "" : "s"} within ${range} mi · avg $${avg ? avg.toFixed(2) : "—"}`}</span>
             </div>
-            <button className="add-top" onClick={openSubmit}>Don’t see your favorite spot?</button>
+            <button className="add-top" onClick={openSubmit}>Missing a spot?</button>
           </div>
 
           <div className="controls">
@@ -512,7 +512,7 @@ export default function Dine99() {
             <div className="empty">
               <h3>No {foodObj.name.toLowerCase()} spots within {range} mi</h3>
               <p>Try a bigger distance — tap “{range < 20 ? "20 mi" : "a wider area"}” above.</p>
-              <button className="add-spot-btn" onClick={openSubmit}>Don’t see your favorite spot?</button>
+              <button className="add-spot-btn" onClick={openSubmit}>Missing a spot?</button>
             </div>
           ) : !loading && (
             <div className="rlist">
@@ -1065,8 +1065,9 @@ select.add-input { cursor: pointer; }
 .sheet-nav::-webkit-scrollbar { display: none; }
 .sheet-nav button { flex: 0 0 auto; background: none; border: none; border-bottom: 2px solid transparent; padding: 8px 10px; font-family: 'Inter'; font-weight: 600; font-size: 13.5px; color: var(--text2); cursor: pointer; transition: color .15s, border-color .15s; }
 .sheet-nav button:hover { color: var(--text); }
-.sheet-scroll { flex: 1; overflow-y: auto; scroll-snap-type: y mandatory; }
-.sec-pane { scroll-snap-align: start; scroll-snap-stop: always; min-height: 100%; padding: 22px 20px 28px; border-bottom: 8px solid var(--bg); display: flex; flex-direction: column; }
+.sheet-scroll { flex: 1; overflow-y: auto; scroll-behavior: smooth; }
+.sec-pane { padding: 24px 22px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; scroll-margin-top: 0; }
+.sec-pane:last-child { border-bottom: none; padding-bottom: 36px; }
 .pane-h { font-family: 'Inter'; font-weight: 700; font-size: 17px; letter-spacing: -.01em; color: var(--text); margin: 0 0 14px; }
 .pane-src { font-weight: 500; font-size: 12px; color: var(--muted); }
 .md-price-row { display: flex; align-items: baseline; gap: 8px; padding: 12px 14px; background: var(--surface2); border-radius: 12px; margin-bottom: 14px; }
@@ -1103,8 +1104,8 @@ select.add-input { cursor: pointer; }
 .report-err { margin: 8px 0 0; color: var(--red); font-size: 12.5px; font-family: 'Inter'; }
 
 /* ---------- SHEET SECTIONS: map / order / reviews / photos ---------- */
-.sheet-map { flex: 1; width: 100%; min-height: 320px; border: 0; border-radius: 14px; }
-.map-fallback { flex: 1; min-height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: var(--surface2); border-radius: 14px; color: var(--text); font-family: 'Inter'; font-weight: 600; font-size: 15px; text-decoration: none; }
+.sheet-map { width: 100%; height: 300px; border: 0; border-radius: 14px; display: block; }
+.map-fallback { height: 220px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: var(--surface2); border-radius: 14px; color: var(--text); font-family: 'Inter'; font-weight: 600; font-size: 15px; text-decoration: none; }
 .map-fallback svg { width: 26px; height: 26px; color: var(--red); }
 .order-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .order-btn { display: flex; flex-direction: column; gap: 3px; padding: 16px; border: 1px solid var(--border-hi); border-radius: 14px; background: var(--surface); text-decoration: none; transition: all .15s; }
