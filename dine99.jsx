@@ -136,19 +136,44 @@ export default function Dine99() {
   const [apiResults, setApiResults] = useState(null); // null = use sample data
   const [loading, setLoading] = useState(false);
 
-  // Ask for location once on mount
-  useEffect(() => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      const { latitude: lat, longitude: lng } = pos.coords;
-      setUserLoc({ lat, lng, city: "Your location" });
-      try {
-        const r = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`);
-        const d = await r.json();
-        setUserLoc({ lat, lng, city: d.city });
-      } catch {}
-    });
-  }, []);
+  // Location picker popover
+  const [locOpen, setLocOpen] = useState(false);
+  const [locInput, setLocInput] = useState("");
+  const [locLoading, setLocLoading] = useState(false);
+  const [locError, setLocError] = useState("");
+
+  async function applyNearMe() {
+    if (!navigator.geolocation) { setLocError("Geolocation not supported"); return; }
+    setLocLoading(true); setLocError("");
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        try {
+          const r = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`);
+          const d = await r.json();
+          setUserLoc({ lat, lng, city: d.city });
+        } catch { setUserLoc({ lat, lng, city: "Your location" }); }
+        setLocLoading(false); setLocOpen(false); setApiResults(null);
+      },
+      () => { setLocError("Location access denied"); setLocLoading(false); }
+    );
+  }
+
+  async function applyCity(e) {
+    e.preventDefault();
+    if (!locInput.trim()) return;
+    setLocLoading(true); setLocError("");
+    try {
+      const r = await fetch(
+        `/api/geocode?address=${encodeURIComponent(locInput.trim())}`
+      );
+      const d = await r.json();
+      if (!d.lat) { setLocError("City not found — try again"); setLocLoading(false); return; }
+      setUserLoc({ lat: d.lat, lng: d.lng, city: d.city });
+      setLocInput(""); setLocOpen(false); setApiResults(null);
+    } catch { setLocError("Something went wrong"); }
+    setLocLoading(false);
+  }
 
   // Fetch real places whenever food or location changes
   useEffect(() => {
@@ -203,7 +228,31 @@ export default function Dine99() {
         <div className="hdr-in">
           <button className="brand" onClick={goHome}><NeonSm /></button>
           <nav className="site-nav">
-            <span className="loc-pill"><Pin /> {userLoc ? userLoc.city : "Downers Grove, IL"}</span>
+            <div className="loc-wrap">
+              <button className="loc-pill" onClick={() => { setLocOpen((o) => !o); setLocError(""); }}>
+                <Pin /> {userLoc ? userLoc.city : "Set location"}
+                <span className="loc-caret">{locOpen ? "▲" : "▼"}</span>
+              </button>
+              {locOpen && (
+                <div className="loc-popover">
+                  <button className="near-me-btn" onClick={applyNearMe} disabled={locLoading}>
+                    <Pin /> {locLoading ? "Locating…" : "Use my location"}
+                  </button>
+                  <div className="loc-divider"><span>or enter a city</span></div>
+                  <form className="loc-form" onSubmit={applyCity}>
+                    <input
+                      className="loc-input"
+                      placeholder="Chicago, IL"
+                      value={locInput}
+                      onChange={(e) => setLocInput(e.target.value)}
+                      autoFocus
+                    />
+                    <button className="loc-go" type="submit" disabled={locLoading}>Go</button>
+                  </form>
+                  {locError && <p className="loc-err">{locError}</p>}
+                </div>
+              )}
+            </div>
             <button className={`nav-link ${tab === "menu" ? "on" : ""}`} onClick={goHome}>Menu</button>
             <button className={`nav-link saved ${tab === "saved" ? "on" : ""}`} onClick={() => setTab("saved")}>
               <Heart filled={favList.length > 0} /> Saved{favList.length ? ` (${favList.length})` : ""}
@@ -404,13 +453,34 @@ const CSS = `
 .neon.sm .neon-d { text-shadow: 0 0 4px #ff8fc4, 0 0 10px #ff4d9d, 0 0 18px rgba(255,77,157,.7); }
 .neon.sm .neon-99 { text-shadow: 0 0 4px #7df5ec, 0 0 10px #15c5bd, 0 0 18px rgba(21,197,189,.7); }
 
+/* ---------- LOCATION PICKER ---------- */
+.loc-wrap { position: relative; }
+.loc-pill { display: inline-flex; align-items: center; gap: 6px; font-family: 'Fredoka'; font-weight: 600; font-size: 13.5px; color: #fff; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.16); padding: 8px 13px; border-radius: 999px; cursor: pointer; transition: background .15s; }
+.loc-pill:hover { background: rgba(255,255,255,.18); }
+.loc-pill svg { color: var(--yellow); }
+.loc-caret { font-size: 9px; opacity: .7; margin-left: 2px; }
+.loc-popover { position: absolute; top: calc(100% + 10px); left: 0; width: 260px; background: var(--night); border: 2px solid rgba(255,255,255,.14); border-radius: 18px; padding: 16px; box-shadow: 0 12px 36px rgba(0,0,0,.45); z-index: 50; animation: fade .15s ease; }
+.near-me-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--teal); color: #fff; border: none; border-radius: 12px; padding: 11px; font-family: 'Fredoka'; font-weight: 700; font-size: 14.5px; cursor: pointer; transition: background .15s; }
+.near-me-btn:hover { background: var(--teal-dk); }
+.near-me-btn:disabled { opacity: .6; cursor: default; }
+.near-me-btn svg { color: #fff; }
+.loc-divider { display: flex; align-items: center; gap: 10px; margin: 12px 0; }
+.loc-divider::before,.loc-divider::after { content:''; flex:1; height:1px; background: rgba(255,255,255,.12); }
+.loc-divider span { font-family:'Fredoka'; font-size:12px; color:rgba(255,255,255,.45); white-space:nowrap; }
+.loc-form { display: flex; gap: 8px; }
+.loc-input { flex: 1; background: rgba(255,255,255,.08); border: 1.5px solid rgba(255,255,255,.18); border-radius: 10px; padding: 9px 12px; font-family: 'Fredoka'; font-size: 14px; color: #fff; outline: none; }
+.loc-input::placeholder { color: rgba(255,255,255,.35); }
+.loc-input:focus { border-color: var(--teal); }
+.loc-go { background: var(--red); color: #fff; border: none; border-radius: 10px; padding: 9px 15px; font-family: 'Fredoka'; font-weight: 700; font-size: 14px; cursor: pointer; transition: background .15s; }
+.loc-go:hover { background: var(--red-dk); }
+.loc-go:disabled { opacity: .6; cursor: default; }
+.loc-err { font-family: 'Fredoka'; font-size: 12.5px; color: var(--red); margin-top: 8px; text-align: center; }
+
 /* ---------- SITE HEADER ---------- */
 .site-hdr { position: sticky; top: 0; z-index: 30; background: var(--night); border-bottom: 3px solid var(--red); box-shadow: 0 4px 20px rgba(0,0,0,.3); }
 .hdr-in { max-width: 1120px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 24px; }
 .brand { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; }
 .site-nav { display: flex; align-items: center; gap: 10px; }
-.loc-pill { display: inline-flex; align-items: center; gap: 6px; font-family: 'Fredoka'; font-weight: 600; font-size: 13.5px; color: #fff; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.16); padding: 8px 13px; border-radius: 999px; }
-.loc-pill svg { color: var(--yellow); }
 .nav-link { display: inline-flex; align-items: center; gap: 7px; font-family: 'Fredoka'; font-weight: 600; font-size: 14px; color: rgba(255,255,255,.85); background: none; border: 2px solid transparent; border-radius: 999px; padding: 8px 16px; cursor: pointer; transition: all .15s; }
 .nav-link:hover { color: #fff; background: rgba(255,255,255,.08); }
 .nav-link.on { color: #fff; background: var(--red); }
