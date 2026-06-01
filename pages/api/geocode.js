@@ -15,7 +15,7 @@ export default async function handler(req, res) {
       data.results[0].address_components?.find((c) => c.types.includes("locality"))
         ?.long_name ||
       data.results[0].formatted_address.split(",")[0];
-    res.setHeader("Cache-Control", "s-maxage=3600");
+    res.setHeader("Cache-Control", "no-store");
     return res.json({ lat: loc.lat, lng: loc.lng, city });
   }
 
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     const city =
       data.results?.[0]?.address_components?.find((c) => c.types.includes("locality"))
         ?.long_name || "Your location";
-    res.setHeader("Cache-Control", "s-maxage=3600");
+    res.setHeader("Cache-Control", "no-store");
     return res.json({ city });
   }
 
