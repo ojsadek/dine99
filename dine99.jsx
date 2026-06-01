@@ -203,6 +203,12 @@ export default function Dine99() {
   const [reportNote, setReportNote] = useState("");
   const [reportState, setReportState] = useState(""); // "" | sending | done | error
 
+  // Cheapest-item photo per food (filled lazily as the user opens each food)
+  const [tilePhotos, setTilePhotos] = useState({});
+  // Reviews expand + photo lightbox
+  const [expanded, setExpanded] = useState({});
+  const [lightbox, setLightbox] = useState(null);
+
   function openSpot(r) {
     setSpot(r); setDetail(null); setReportOpen(false); setReportPrice(""); setReportNote(""); setReportState("");
     setDetailLoading(true);
@@ -278,8 +284,7 @@ export default function Dine99() {
     fetch(`/api/search?lat=${userLoc.lat}&lng=${userLoc.lng}&radius=32187&keyword=${encodeURIComponent(food.name)}`)
       .then((r) => r.json())
       .then((d) => {
-        if (!d.places?.length) return; // fall back to sample data
-        const mapped = d.places.map((p) => ({
+        const mapped = (d.places || []).map((p) => ({
           ...p,
           foodId: selectedFood,
           distance: haversine(userLoc.lat, userLoc.lng, p.lat, p.lng),
@@ -288,6 +293,9 @@ export default function Dine99() {
           imgUrl: p.photoRef ? photoUrl(p.photoRef) : null,
         }));
         setApiResults(mapped);
+        // cache the cheapest photo for this food's tile
+        const cheapestPhoto = [...mapped].filter((m) => m.imgUrl).sort((a, b) => a.price - b.price)[0];
+        if (cheapestPhoto) setTilePhotos((prev) => ({ ...prev, [selectedFood]: cheapestPhoto.imgUrl }));
       })
       .catch(() => setApiResults([]))
       .finally(() => setLoading(false));
@@ -402,7 +410,9 @@ export default function Dine99() {
                 {filteredFoods.map((f, i) => (
                   <button key={f.id} className="fcard" style={{ animationDelay: `${i * 22}ms` }} onClick={() => openFood(f.id)}>
                     <div className="fcard-img" style={{ backgroundImage: gradFor(f) }}>
-                      <span className="tile-icon"><FoodIcon id={f.id} cat={f.cat} /></span>
+                      {tilePhotos[f.id]
+                        ? <img className="fimg tile-photo" loading="lazy" alt={f.name} src={tilePhotos[f.id]} />
+                        : <span className="tile-icon"><FoodIcon id={f.id} cat={f.cat} /></span>}
                     </div>
                     <div className="fcard-txt">
                       <span className="fcard-name">{f.name}</span>
@@ -440,7 +450,7 @@ export default function Dine99() {
             <div className="reshead-img" style={{ backgroundImage: gradFor(foodObj) }}><span className="tile-icon"><FoodIcon id={foodObj.id} cat={foodObj.cat} size={30} /></span></div>
             <div className="reshead-t">
               <h2>{foodObj.name}</h2>
-              <span>{results.length} spots near you · avg ${avg ? avg.toFixed(2) : "—"}</span>
+              <span>{loading ? "Searching nearby…" : `${results.length} spot${results.length === 1 ? "" : "s"} within ${range} mi · avg $${avg ? avg.toFixed(2) : "—"}`}</span>
             </div>
           </div>
 
@@ -460,13 +470,20 @@ export default function Dine99() {
           </div>
 
           {loading && (
-            <div className="loading-bar">
-              <span>Finding real spots near you…</span>
+            <div className="rlist">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="vspot skel">
+                  <div className="vspot-img skel-box" />
+                  <div className="vspot-body">
+                    <div className="skel-line w70" /><div className="skel-line w40" /><div className="skel-line w50" />
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
           {!loading && results.length === 0 ? (
-            <div className="empty"><h3>No spots in range</h3><p>Tap a bigger distance to see more.</p></div>
+            <div className="empty"><h3>No {foodObj.name.toLowerCase()} spots within {range} mi</h3><p>Try a bigger distance — tap “{range < 20 ? "20 mi" : "a wider area"}” above.</p></div>
           ) : !loading && (
             <div className="rlist">
               {results.map((r) => {
@@ -540,10 +557,13 @@ export default function Dine99() {
         return (
         <div className="sheet-bg" onClick={closeSpot}>
           <div className="sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="sheet-top">
-              <div className="sheet-grab" />
-              <button className="sheet-x" onClick={closeSpot} aria-label="Close">✕</button>
-              <div className="sheet-title">
+            <button className="sheet-x" onClick={closeSpot} aria-label="Close">✕</button>
+            <div className="sheet-hero">
+              {(detail?.photoRef || spot.imgUrl)
+                ? <img className="sheet-hero-img" alt="" src={detail?.photoRef ? `/api/photo?ref=${encodeURIComponent(detail.photoRef)}&w=800` : spot.imgUrl} />
+                : <div className="sheet-hero-img tile" style={{ backgroundImage: gradFor(food) }}><FoodIcon id={spot.foodId} cat={food?.cat} size={64} /></div>}
+              <div className="sheet-hero-grad" />
+              <div className="sheet-hero-txt">
                 <h2>{spot.name}</h2>
                 <span className="sheet-sub"><span className="sstar"><Star /> {spot.rating || "—"}</span>
                   {detail?.reviews?.length ? <><span className="mdot">•</span>{detail.reviews.length}+ reviews</> : null}
@@ -551,12 +571,12 @@ export default function Dine99() {
                   {detail?.open != null && <><span className="mdot">•</span><em className={detail.open ? "op" : "cl"}>{detail.open ? "Open" : "Closed"}</em></>}
                 </span>
               </div>
-              <nav className="sheet-nav">
-                {[["sec-info","Info"],["sec-map","Map"],["sec-order","Order"],["sec-reviews","Reviews"],["sec-photos","Photos"]].map(([id,l]) => (
-                  <button key={id} onClick={() => goSec(id)}>{l}</button>
-                ))}
-              </nav>
             </div>
+            <nav className="sheet-nav">
+              {[["sec-info","Info"],["sec-map","Map"],["sec-order","Order"],["sec-reviews","Reviews"],["sec-photos","Photos"]].map(([id,l]) => (
+                <button key={id} onClick={() => goSec(id)}>{l}</button>
+              ))}
+            </nav>
 
             <div className="sheet-scroll">
               {/* INFO */}
@@ -630,16 +650,25 @@ export default function Dine99() {
                 {detailLoading && <p className="md-loading">Loading…</p>}
                 {detail && (!detail.reviews || detail.reviews.length === 0) && <p className="md-loading">No reviews available.</p>}
                 <div className="rev-list">
-                  {detail?.reviews?.map((rv, i) => (
-                    <div key={i} className="rev">
-                      <div className="rev-top">
-                        {rv.avatar ? <img className="rev-av" src={rv.avatar} alt="" /> : <span className="rev-av ph">{rv.author?.[0] || "?"}</span>}
-                        <div><div className="rev-name">{rv.author}</div><div className="rev-when">{rv.when}</div></div>
-                        <span className="rev-rating"><Star /> {rv.rating}</span>
+                  {detail?.reviews?.map((rv, i) => {
+                    const long = rv.text && rv.text.length > 180;
+                    const isOpen = expanded[i];
+                    return (
+                      <div key={i} className="rev">
+                        <div className="rev-top">
+                          {rv.avatar ? <img className="rev-av" src={rv.avatar} alt="" referrerPolicy="no-referrer" /> : <span className="rev-av ph">{rv.author?.[0] || "?"}</span>}
+                          <div><div className="rev-name">{rv.author}</div><div className="rev-when">{rv.when}</div></div>
+                          <span className="rev-rating"><Star /> {rv.rating}</span>
+                        </div>
+                        <p className={`rev-text ${long && !isOpen ? "clamp" : ""}`}>{rv.text}</p>
+                        {long && (
+                          <button className="rev-more" onClick={() => setExpanded((p) => ({ ...p, [i]: !p[i] }))}>
+                            {isOpen ? "Show less" : "Read more…"}
+                          </button>
+                        )}
                       </div>
-                      <p className="rev-text">{rv.text}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </section>
 
@@ -649,7 +678,8 @@ export default function Dine99() {
                 {detail && (!detail.photos || detail.photos.length === 0) && <p className="md-loading">No photos available.</p>}
                 <div className="photo-grid">
                   {detail?.photos?.map((ref, i) => (
-                    <img key={i} className="photo-cell" loading="lazy" alt="" src={`/api/photo?ref=${encodeURIComponent(ref)}&w=500`} />
+                    <img key={i} className="photo-cell" loading="lazy" alt="" src={`/api/photo?ref=${encodeURIComponent(ref)}&w=500`}
+                      onClick={() => setLightbox(`/api/photo?ref=${encodeURIComponent(ref)}&w=1000`)} />
                   ))}
                 </div>
               </section>
@@ -658,6 +688,14 @@ export default function Dine99() {
         </div>
         );
       })()}
+
+      {/* PHOTO LIGHTBOX */}
+      {lightbox && (
+        <div className="lightbox" onClick={() => setLightbox(null)}>
+          <button className="sheet-x lb-x" aria-label="Close">✕</button>
+          <img src={lightbox} alt="" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
     </div>
   );
 }
@@ -883,17 +921,41 @@ const CSS = `
 .tile-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: fade .3s ease; }
 .vspot { cursor: pointer; }
 
+/* ---------- SKELETON LOADING ---------- */
+.vspot.skel { pointer-events: none; }
+.skel-box { height: 140px; }
+.skel-box, .skel-line { background: linear-gradient(90deg, var(--surface2) 25%, rgba(0,0,0,.04) 37%, var(--surface2) 63%); background-size: 400% 100%; animation: shimmer 1.3s ease infinite; border-radius: 6px; }
+.skel-line { height: 11px; margin: 9px 0; } .skel-line.w70 { width: 70%; } .skel-line.w40 { width: 40%; } .skel-line.w50 { width: 50%; }
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
 /* ---------- RIGHT-SIDE DRAWER ---------- */
 .sheet-bg { position: fixed; inset: 0; z-index: 100; background: rgba(20,14,8,.45); backdrop-filter: blur(2px); display: flex; justify-content: flex-end; animation: fade .18s ease; }
-.sheet { position: relative; width: 460px; max-width: 92vw; height: 100vh; background: var(--surface); box-shadow: -16px 0 60px rgba(20,14,8,.35); display: flex; flex-direction: column; overflow: hidden; animation: drawerin .3s cubic-bezier(.2,.8,.2,1) both; }
+.sheet { position: relative; width: 640px; max-width: 96vw; height: 100vh; background: var(--surface); box-shadow: -16px 0 60px rgba(20,14,8,.35); display: flex; flex-direction: column; overflow: hidden; animation: drawerin .3s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes drawerin { from { transform: translateX(100%); } }
-.sheet-top { position: relative; padding: 18px 22px 0; border-bottom: 1px solid var(--border); }
 .sheet-grab { display: none; }
-.sheet-x { position: absolute; top: 16px; right: 18px; width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--surface2); color: var(--text2); font-size: 13px; cursor: pointer; display: grid; place-items: center; }
-.sheet-x:hover { background: var(--border-hi); }
-.sheet-title h2 { font-family: 'Inter'; font-weight: 700; font-size: 21px; letter-spacing: -.02em; margin: 0 40px 4px 0; color: var(--text); }
-.sheet-sub { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text2); font-weight: 500; flex-wrap: wrap; }
-.sheet-sub .op { color: var(--teal); font-weight: 600; } .sheet-sub .cl { color: var(--red); font-weight: 600; }
+.sheet-x { position: absolute; top: 14px; right: 16px; z-index: 5; width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(0,0,0,.5); backdrop-filter: blur(6px); color: #fff; font-size: 13px; cursor: pointer; display: grid; place-items: center; }
+.sheet-x:hover { background: rgba(0,0,0,.7); }
+.sheet-hero { position: relative; height: 200px; flex: 0 0 auto; overflow: hidden; background: var(--surface2); }
+.sheet-hero-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sheet-hero-img.tile { display: grid; place-items: center; color: rgba(90,55,25,.5); }
+.sheet-hero-grad { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.78) 0%, rgba(0,0,0,.1) 50%, rgba(0,0,0,.18) 100%); }
+.sheet-hero-txt { position: absolute; left: 22px; right: 22px; bottom: 16px; }
+.sheet-hero-txt h2 { font-family: 'Inter'; font-weight: 800; font-size: 26px; letter-spacing: -.02em; margin: 0 0 5px; color: #fff; text-shadow: 0 1px 12px rgba(0,0,0,.4); }
+.sheet-sub { display: flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(255,255,255,.92); font-weight: 600; flex-wrap: wrap; text-shadow: 0 1px 8px rgba(0,0,0,.4); }
+.sheet-sub .sstar svg { color: var(--yellow); }
+.sheet-sub .op { color: #6ee7d6; } .sheet-sub .cl { color: #ff9b9b; }
+.sheet-nav { display: flex; gap: 2px; padding: 4px 14px 0; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; flex: 0 0 auto; }
+.sheet-nav::-webkit-scrollbar { display: none; }
+.sheet-nav button { flex: 0 0 auto; background: none; border: none; border-bottom: 2px solid transparent; padding: 12px 12px; font-family: 'Inter'; font-weight: 600; font-size: 13.5px; color: var(--text2); cursor: pointer; transition: color .15s, border-color .15s; }
+.sheet-nav button:hover { color: var(--text); }
+.lightbox { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.88); display: flex; align-items: center; justify-content: center; padding: 24px; animation: fade .15s ease; cursor: zoom-out; }
+.lightbox img { max-width: 100%; max-height: 100%; border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+.lb-x { background: rgba(255,255,255,.15); }
+.rev-text.clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.rev-more { background: none; border: none; padding: 6px 0 0; font-family: 'Inter'; font-weight: 600; font-size: 13px; color: var(--teal); cursor: pointer; }
+.rev-more:hover { text-decoration: underline; }
+.photo-cell { cursor: zoom-in; transition: opacity .15s; }
+.photo-cell:hover { opacity: .88; }
 .sheet-nav { display: flex; gap: 4px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; }
 .sheet-nav::-webkit-scrollbar { display: none; }
 .sheet-nav button { flex: 0 0 auto; background: none; border: none; border-bottom: 2px solid transparent; padding: 8px 10px; font-family: 'Inter'; font-weight: 600; font-size: 13.5px; color: var(--text2); cursor: pointer; transition: color .15s, border-color .15s; }
