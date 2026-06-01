@@ -8,6 +8,7 @@ export default async function handler(req, res) {
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${key}`;
     const r = await fetch(url);
     const data = await r.json();
+    console.log("Geocode forward status:", data.status, data.error_message || "");
     if (!data.results?.length) return res.json({ city: null });
     const loc = data.results[0].geometry.location;
     const city =
