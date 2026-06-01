@@ -433,20 +433,20 @@ const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Monoton&family=Inter:wght@400;500;600;700;800&display=swap');
 
 .d99 {
-  --bg: #0a0a0f;
-  --surface: #131319;
-  --surface2: #1c1c25;
-  --border: rgba(255,255,255,.07);
-  --border-hi: rgba(255,255,255,.13);
+  --bg: #f7f7f8;
+  --surface: #ffffff;
+  --surface2: #eeeef0;
+  --border: rgba(0,0,0,.08);
+  --border-hi: rgba(0,0,0,.14);
   --white: #ffffff;
-  --text: #f4f4f6;
-  --text2: #a6a6b3;
-  --muted: #6d6d7a;
-  --red: #ff4d4d;
-  --red-dk: #e63939;
-  --teal: #2dd4bf;
-  --teal-dk: #14b8a6;
-  --yellow: #fbbf24;
+  --text: #18181b;
+  --text2: #52525b;
+  --muted: #a1a1aa;
+  --red: #ef4444;
+  --red-dk: #dc2626;
+  --teal: #0d9488;
+  --teal-dk: #0f766e;
+  --yellow: #f59e0b;
   --pink: #ff4d9d;
   --night: #0d0d12;
   --night2: #1a1326;
@@ -460,9 +460,22 @@ const CSS = `
 .d99 * { box-sizing: border-box; }
 .d99 button { font-family: inherit; }
 
+/* Dark brand zones (header, hero, footer) — neon needs dark to glow.
+   Re-scope the theme vars to light-on-dark so child rules just work. */
+.site-hdr, .hero, .foot {
+  --bg: rgba(0,0,0,.25);
+  --surface: rgba(255,255,255,.06);
+  --surface2: rgba(255,255,255,.08);
+  --border: rgba(255,255,255,.1);
+  --border-hi: rgba(255,255,255,.18);
+  --text: #f4f4f6;
+  --text2: rgba(255,255,255,.62);
+  --muted: rgba(255,255,255,.42);
+}
+
 .fimg { display: block; object-fit: cover; width: 100%; height: 100%; background: var(--surface2); }
-.fimg.fb { display: grid; place-items: center; background: linear-gradient(135deg, hsl(calc(var(--g) * 1deg) 50% 30%), hsl(calc(var(--g) * 1deg + 40) 55% 22%)); }
-.fimg.fb span { font-family: 'Inter'; color: rgba(255,255,255,.7); font-weight: 600; font-size: 15px; padding: 8px; text-align: center; }
+.fimg.fb { display: grid; place-items: center; background: linear-gradient(135deg, hsl(calc(var(--g) * 1deg) 60% 88%), hsl(calc(var(--g) * 1deg + 40) 55% 80%)); }
+.fimg.fb span { font-family: 'Inter'; color: rgba(0,0,0,.55); font-weight: 600; font-size: 15px; padding: 8px; text-align: center; }
 
 /* ---------- NEON WORDMARK ---------- */
 .neon { font-family: 'Monoton', cursive; font-size: 54px; line-height: .9; letter-spacing: .02em; }
@@ -478,7 +491,7 @@ const CSS = `
 .loc-pill:hover { background: rgba(255,255,255,.1); }
 .loc-pill svg { width: 14px; height: 14px; color: var(--teal); }
 .loc-caret { font-size: 8px; opacity: .6; margin-left: 2px; }
-.loc-popover { position: absolute; top: calc(100% + 10px); left: 0; width: 270px; background: var(--surface); border: 1px solid var(--border-hi); border-radius: 14px; padding: 16px; box-shadow: 0 16px 44px rgba(0,0,0,.55); z-index: 50; animation: fade .15s ease; }
+.loc-popover { position: absolute; top: calc(100% + 10px); left: 0; width: 270px; background: #17171f; border: 1px solid rgba(255,255,255,.14); border-radius: 14px; padding: 16px; box-shadow: 0 16px 44px rgba(0,0,0,.55); z-index: 50; animation: fade .15s ease; }
 .near-me-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--red); color: #fff; border: none; border-radius: 10px; padding: 11px; font-family: 'Inter'; font-weight: 600; font-size: 14px; cursor: pointer; transition: background .15s; }
 .near-me-btn:hover { background: var(--red-dk); }
 .near-me-btn:disabled { opacity: .6; cursor: default; }
@@ -490,13 +503,13 @@ const CSS = `
 .loc-input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--border-hi); border-radius: 9px; padding: 10px 12px; font-family: 'Inter'; font-size: 14px; color: var(--text); outline: none; transition: border-color .15s; }
 .loc-input::placeholder { color: var(--muted); }
 .loc-input:focus { border-color: var(--teal); }
-.loc-go { background: rgba(255,255,255,.1); color: var(--text); border: 1px solid var(--border-hi); border-radius: 9px; padding: 10px 16px; font-family: 'Inter'; font-weight: 600; font-size: 14px; cursor: pointer; transition: all .15s; }
-.loc-go:hover { background: rgba(255,255,255,.16); }
+.loc-go { background: transparent; color: var(--text); border: 1px solid var(--border-hi); border-radius: 9px; padding: 10px 16px; font-family: 'Inter'; font-weight: 600; font-size: 14px; cursor: pointer; transition: all .15s; }
+.loc-go:hover { background: rgba(127,127,127,.1); }
 .loc-go:disabled { opacity: .6; cursor: default; }
 .loc-err { font-family: 'Inter'; font-size: 12.5px; color: var(--red); margin-top: 10px; text-align: center; }
 
 /* ---------- SITE HEADER ---------- */
-.site-hdr { position: sticky; top: 0; z-index: 30; background: rgba(10,10,15,.72); backdrop-filter: saturate(180%) blur(16px); border-bottom: 1px solid var(--border); }
+.site-hdr { position: sticky; top: 0; z-index: 30; background: rgba(13,13,18,.85); backdrop-filter: saturate(180%) blur(16px); border-bottom: 1px solid rgba(255,255,255,.08); }
 .hdr-in { max-width: 1120px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 24px; }
 .brand { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; }
 .site-nav { display: flex; align-items: center; gap: 6px; }
@@ -512,7 +525,7 @@ const CSS = `
 .hero { position: relative; background: var(--night); overflow: hidden; padding: 72px 24px 72px; text-align: center; }
 .hero-glow { position: absolute; inset: 0; background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(255,77,157,.22) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 85% 90%, rgba(45,212,191,.16) 0%, transparent 55%); }
 .hero-in { position: relative; z-index: 2; max-width: 680px; margin: 0 auto; }
-.hero-open { font-family: 'Inter'; font-weight: 600; letter-spacing: .22em; font-size: 11px; text-transform: uppercase; color: var(--teal); display: inline-block; margin-bottom: 22px; padding: 6px 14px; border: 1px solid rgba(45,212,191,.3); border-radius: 999px; background: rgba(45,212,191,.07); }
+.hero-open { font-family: 'Inter'; font-weight: 600; letter-spacing: .22em; font-size: 11px; text-transform: uppercase; color: #2dd4bf; display: inline-block; margin-bottom: 22px; padding: 6px 14px; border: 1px solid rgba(45,212,191,.3); border-radius: 999px; background: rgba(45,212,191,.07); }
 .neon { display: inline-block; }
 .hero-tag { display: block; margin-top: 20px; font-family: 'Inter'; font-weight: 400; font-size: 17px; line-height: 1.5; color: var(--text2); }
 .hero-floor { display: none; }
@@ -535,7 +548,7 @@ const CSS = `
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(216px, 1fr)); gap: 16px; }
 .fcard { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; cursor: pointer; padding: 0; text-align: left; transition: transform .18s, box-shadow .18s, border-color .18s; animation: pop .4s ease both; }
 @keyframes pop { from { opacity: 0; transform: translateY(12px); } }
-.fcard:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,.45); border-color: var(--border-hi); }
+.fcard:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(0,0,0,.1); border-color: var(--border-hi); }
 .fcard:active { transform: translateY(0); }
 .fcard-img { height: 140px; overflow: hidden; position: relative; }
 .fcard-img::after { content:''; position:absolute; inset:0; background: linear-gradient(to top, rgba(0,0,0,.4) 0%, transparent 60%); pointer-events:none; }
@@ -547,9 +560,9 @@ const CSS = `
 .nores { grid-column: 1/-1; text-align: center; color: var(--muted); padding: 44px 0; font-family: 'Inter'; font-size: 17px; }
 
 /* ---------- FOOTER ---------- */
-.foot { margin-top: 40px; border-top: 1px solid var(--border); }
+.foot { margin-top: 56px; background: var(--night); }
 .foot-floor { display: none; }
-.foot-in { max-width: 1120px; margin: 0 auto; padding: 24px 24px 40px; display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.foot-in { max-width: 1120px; margin: 0 auto; padding: 28px 24px 44px; display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
 .foot-in .neon.sm { font-size: 20px; }
 .foot-in p { margin: 0; color: var(--muted); font-size: 13px; max-width: 520px; font-family: 'Inter'; font-weight: 500; }
 
@@ -583,14 +596,14 @@ const CSS = `
 /* ---------- SPOTS (vertical cards) ---------- */
 .rlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 14px; }
 .vspot { position: relative; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: transform .18s, box-shadow .18s, border-color .18s; animation: pop .4s ease both; }
-.vspot:hover { transform: translateY(-3px); box-shadow: 0 14px 34px rgba(0,0,0,.45); border-color: var(--border-hi); }
-.vspot.best { border-color: rgba(45,212,191,.4); }
-.vspot.best:hover { box-shadow: 0 14px 34px rgba(45,212,191,.15); }
+.vspot:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,.1); border-color: var(--border-hi); }
+.vspot.best { border-color: rgba(13,148,136,.45); }
+.vspot.best:hover { box-shadow: 0 12px 30px rgba(13,148,136,.15); }
 .vspot-img { position: relative; height: 140px; overflow: hidden; }
 .vspot-img::after { content:''; position:absolute; inset:0; background: linear-gradient(to top, rgba(0,0,0,.5) 0%, transparent 55%); pointer-events:none; }
 .vspot-img .fimg { width: 100%; height: 100%; transition: transform .45s; }
 .vspot:hover .vspot-img .fimg { transform: scale(1.06); }
-.v-badge { position: absolute; top: 10px; left: 10px; background: var(--teal); color: #042f2a; font-family: 'Inter'; font-weight: 700; font-size: 10px; letter-spacing: .04em; padding: 4px 9px; border-radius: 6px; z-index: 1; }
+.v-badge { position: absolute; top: 10px; left: 10px; background: var(--teal); color: #fff; font-family: 'Inter'; font-weight: 700; font-size: 10px; letter-spacing: .04em; padding: 4px 9px; border-radius: 6px; z-index: 1; }
 .v-heart { position: absolute; top: 9px; right: 9px; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: rgba(0,0,0,.5); backdrop-filter: blur(6px); color: rgba(255,255,255,.5); cursor: pointer; transition: transform .15s, color .15s; z-index: 1; }
 .v-heart:hover { color: var(--red); } .v-heart:active { transform: scale(1.2); } .v-heart.on { color: var(--red); }
 .vspot-body { display: flex; flex-direction: column; gap: 7px; padding: 13px 14px 14px; flex: 1; }
@@ -603,7 +616,7 @@ const CSS = `
 .v-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 11px; margin-top: 11px; border-top: 1px solid var(--border); }
 .v-price { font-family: 'Inter'; font-weight: 700; font-size: 22px; line-height: 1; letter-spacing: -.02em; color: var(--text); font-variant-numeric: tabular-nums; }
 .vspot.best .v-price { color: var(--teal); }
-.v-save { font-family: 'Inter'; font-weight: 600; font-size: 11px; color: var(--teal); background: rgba(45,212,191,.1); border: 1px solid rgba(45,212,191,.22); padding: 3px 8px; border-radius: 6px; white-space: nowrap; }
+.v-save { font-family: 'Inter'; font-weight: 600; font-size: 11px; color: var(--teal); background: rgba(13,148,136,.08); border: 1px solid rgba(13,148,136,.2); padding: 3px 8px; border-radius: 6px; white-space: nowrap; }
 .rfoot { grid-column: 1 / -1; text-align: center; font-size: 12px; color: var(--muted); padding: 16px 0 2px; font-family: 'Inter'; }
 
 /* ---------- LOCATION GATE ---------- */
