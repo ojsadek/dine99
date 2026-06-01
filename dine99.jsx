@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 
 // ============================================================================
 // DINE 99 — neon retro-diner food finder, as a responsive website.
@@ -56,6 +56,29 @@ function seeded(seed) { let s = seed % 2147483647; if (s <= 0) s += 2147483646; 
 function hashStr(str) { let h = 0; for (let i = 0; i < str.length; i++) { h = (h << 5) - h + str.charCodeAt(i); h |= 0; } return Math.abs(h); }
 const lockFor = (id) => (hashStr(id) % 92) + 1;
 
+// --- Real-data helpers ---
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 3958.8;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return +(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1);
+}
+
+// Maps Google price_level (0–4) to an estimated item price
+function estimatePrice(level, base) {
+  const mult = [0.7, 0.85, 1.0, 1.4, 2.0];
+  return +(base * (mult[level ?? 1] ?? 1.0)).toFixed(2);
+}
+
+function photoUrl(ref) {
+  return `/api/photo?ref=${encodeURIComponent(ref)}&w=400`;
+}
+
 function generateRestaurants(foodId) {
   const food = FOODS.find((f) => f.id === foodId);
   const rand = seeded(hashStr(foodId) + 7);
@@ -108,9 +131,54 @@ export default function Dine99() {
   const [openOnly, setOpenOnly] = useState(false);
   const [favs, setFavs] = useState({});
 
+  // Real-location state
+  const [userLoc, setUserLoc] = useState(null); // { lat, lng, city }
+  const [apiResults, setApiResults] = useState(null); // null = use sample data
+  const [loading, setLoading] = useState(false);
+
+  // Ask for location once on mount
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const { latitude: lat, longitude: lng } = pos.coords;
+      setUserLoc({ lat, lng, city: "Your location" });
+      try {
+        const r = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`);
+        const d = await r.json();
+        setUserLoc({ lat, lng, city: d.city });
+      } catch {}
+    });
+  }, []);
+
+  // Fetch real places whenever food or location changes
+  useEffect(() => {
+    if (!selectedFood || !userLoc) return;
+    const food = FOODS.find((f) => f.id === selectedFood);
+    setLoading(true);
+    setApiResults(null);
+    fetch(`/api/search?lat=${userLoc.lat}&lng=${userLoc.lng}&radius=16000&keyword=${encodeURIComponent(food.name)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.places?.length) return; // fall back to sample data
+        const mapped = d.places.map((p) => ({
+          ...p,
+          foodId: selectedFood,
+          distance: haversine(userLoc.lat, userLoc.lng, p.lat, p.lng),
+          price: estimatePrice(p.priceLevel, food.base),
+          closes: null,
+          imgUrl: p.photoRef ? photoUrl(p.photoRef) : null,
+        }));
+        setApiResults(mapped);
+      })
+      .catch(() => {}) // silent – falls back to sample data
+      .finally(() => setLoading(false));
+  }, [selectedFood, userLoc]);
+
   const toggleFav = (r) => setFavs((p) => { const n = { ...p }; if (n[r.id]) delete n[r.id]; else n[r.id] = r; return n; });
 
-  const allResults = useMemo(() => (selectedFood ? generateRestaurants(selectedFood) : []), [selectedFood]);
+  const sampleResults = useMemo(() => (selectedFood ? generateRestaurants(selectedFood) : []), [selectedFood]);
+  const allResults = apiResults ?? sampleResults;
+
   const results = useMemo(() => {
     let r = allResults.filter((x) => x.distance <= range);
     if (openOnly) r = r.filter((x) => x.open);
@@ -135,7 +203,7 @@ export default function Dine99() {
         <div className="hdr-in">
           <button className="brand" onClick={goHome}><NeonSm /></button>
           <nav className="site-nav">
-            <span className="loc-pill"><Pin /> Downers Grove, IL</span>
+            <span className="loc-pill"><Pin /> {userLoc ? userLoc.city : "Downers Grove, IL"}</span>
             <button className={`nav-link ${tab === "menu" ? "on" : ""}`} onClick={goHome}>Menu</button>
             <button className={`nav-link saved ${tab === "saved" ? "on" : ""}`} onClick={() => setTab("saved")}>
               <Heart filled={favList.length > 0} /> Saved{favList.length ? ` (${favList.length})` : ""}
@@ -217,9 +285,15 @@ export default function Dine99() {
             </div>
           </div>
 
-          {results.length === 0 ? (
+          {loading && (
+            <div className="loading-bar">
+              <span>Finding real spots near you…</span>
+            </div>
+          )}
+
+          {!loading && results.length === 0 ? (
             <div className="empty"><h3>No spots in range</h3><p>Tap a bigger distance to see more.</p></div>
-          ) : (
+          ) : !loading && (
             <div className="rlist">
               {results.map((r) => {
                 const best = r.price === cheapest && r.open;
@@ -227,7 +301,10 @@ export default function Dine99() {
                 return (
                   <div key={r.id} className={`vspot ${best ? "best" : ""}`}>
                     <div className="vspot-img">
-                      <FoodImg kw={foodObj.kw} w={360} h={300} lock={lockFor(r.id)} cls="" label={foodObj.name} />
+                      {r.imgUrl
+                        ? <img className="fimg" loading="lazy" alt={r.name} src={r.imgUrl} />
+                        : <FoodImg kw={foodObj.kw} w={360} h={300} lock={lockFor(r.id)} cls="" label={foodObj.name} />
+                      }
                       {best && <span className="v-badge">★ BEST PRICE</span>}
                       <span className={`v-heart ${favs[r.id] ? "on" : ""}`} onClick={() => toggleFav(r)}><Heart filled={!!favs[r.id]} /></span>
                     </div>
@@ -242,7 +319,11 @@ export default function Dine99() {
                   </div>
                 );
               })}
-              <p className="rfoot">Sample listings · prices for {foodObj.name.toLowerCase()}</p>
+              <p className="rfoot">
+                {apiResults
+                  ? `Real spots via Google · prices are estimates based on restaurant tier`
+                  : `Sample listings · share location for real spots near you`}
+              </p>
             </div>
           )}
         </div>
@@ -432,6 +513,10 @@ const CSS = `
 .vspot.best .v-price { color: var(--teal-dk); }
 .v-save { font-family: 'Fredoka'; font-weight: 600; font-size: 11px; color: #fff; background: var(--teal); padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
 .rfoot { grid-column: 1 / -1; text-align: center; font-size: 12.5px; color: var(--muted); padding: 12px 0 2px; font-family: 'Fredoka'; }
+
+/* ---------- LOADING ---------- */
+.loading-bar { text-align: center; padding: 48px 22px; font-family: 'Fredoka'; font-weight: 600; font-size: 16px; color: var(--teal-dk); animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
 
 /* ---------- EMPTY ---------- */
 .saved-page { max-width: 1120px; }
