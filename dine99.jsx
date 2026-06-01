@@ -212,6 +212,31 @@ export default function Dine99() {
   const [expanded, setExpanded] = useState({});
   const [lightbox, setLightbox] = useState(null);
 
+  // Submit-a-restaurant
+  const [subOpen, setSubOpen] = useState(false);
+  const [sub, setSub] = useState({ food_id: "", maps_url: "", name: "", location: "", price: "" });
+  const [subState, setSubState] = useState(""); // "" | sending | done | error
+  function openSubmit() {
+    setSub({ food_id: selectedFood || "", maps_url: "", name: "", location: "", price: "" });
+    setSubState(""); setSubOpen(true);
+  }
+  async function submitRestaurant(e) {
+    e.preventDefault();
+    const hasLink = /^https?:\/\//i.test(sub.maps_url);
+    const hasManual = sub.name.trim() && sub.location.trim();
+    if (!sub.food_id || (!hasLink && !hasManual)) { setSubState("error"); return; }
+    setSubState("sending");
+    try {
+      const food = FOODS.find((f) => f.id === sub.food_id);
+      const res = await fetch("/api/submit-restaurant", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...sub, food_name: food?.name, user_city: userLoc?.city }),
+      });
+      if (!res.ok) throw new Error();
+      setSubState("done");
+    } catch { setSubState("error"); }
+  }
+
   function openSpot(r) {
     setSpot(r); setDetail(null); setReportOpen(false); setReportPrice(""); setReportNote(""); setReportState("");
     setDetailLoading(true);
@@ -483,7 +508,11 @@ export default function Dine99() {
           )}
 
           {!loading && results.length === 0 ? (
-            <div className="empty"><h3>No {foodObj.name.toLowerCase()} spots within {range} mi</h3><p>Try a bigger distance — tap “{range < 20 ? "20 mi" : "a wider area"}” above.</p></div>
+            <div className="empty">
+              <h3>No {foodObj.name.toLowerCase()} spots within {range} mi</h3>
+              <p>Try a bigger distance — tap “{range < 20 ? "20 mi" : "a wider area"}” above.</p>
+              <button className="add-spot-btn" onClick={openSubmit}>+ Know a spot? Add it</button>
+            </div>
           ) : !loading && (
             <div className="rlist">
               {results.map((r) => {
@@ -510,6 +539,10 @@ export default function Dine99() {
                   </div>
                 );
               })}
+              <div className="add-spot-row">
+                <span>Don’t see a spot that serves {foodObj.name.toLowerCase()}?</span>
+                <button className="add-spot-btn" onClick={openSubmit}>+ Add it</button>
+              </div>
               <p className="rfoot">Real spots via Google · prices estimated by restaurant tier</p>
             </div>
           )}
@@ -615,6 +648,10 @@ export default function Dine99() {
                     {reportState === "error" && <p className="report-err">Enter a valid price and try again.</p>}
                   </form>
                 ))}
+                <div className="pane-deco" aria-hidden="true">
+                  <FoodIcon id={spot.foodId} cat={food?.cat} size={108} />
+                  <span className="deco-word"><span className="deco-d">DINE</span><span className="deco-9">99</span></span>
+                </div>
               </section>
 
               {/* MAP */}
@@ -688,6 +725,58 @@ export default function Dine99() {
         </div>
         );
       })()}
+
+      {/* ADD A RESTAURANT */}
+      {subOpen && (
+        <div className="add-bg" onClick={() => setSubOpen(false)}>
+          <div className="add-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="sheet-x" onClick={() => setSubOpen(false)} aria-label="Close">✕</button>
+            {subState === "done" ? (
+              <div className="add-done">
+                <h3>Thanks! 🎉</h3>
+                <p>Your suggestion was submitted for review. We’ll verify and add it soon.</p>
+                <button className="md-btn primary" onClick={() => setSubOpen(false)}>Done</button>
+              </div>
+            ) : (
+              <form className="add-form" onSubmit={submitRestaurant}>
+                <h3 className="add-h">Suggest a restaurant</h3>
+                <p className="add-sub">Know a spot we’re missing? Tell us and we’ll verify it.</p>
+
+                <label className="add-lbl">What do they serve?</label>
+                <select className="add-input" value={sub.food_id} onChange={(e) => setSub({ ...sub, food_id: e.target.value })}>
+                  <option value="">Choose a food…</option>
+                  {FOODS.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+                </select>
+
+                <label className="add-lbl">Google Maps link</label>
+                <input className="add-input" placeholder="Paste a Google Maps / Places link" value={sub.maps_url}
+                  onChange={(e) => setSub({ ...sub, maps_url: e.target.value })} />
+
+                <div className="add-or"><span>or enter it manually</span></div>
+
+                <label className="add-lbl">Restaurant name</label>
+                <input className="add-input" placeholder="e.g. Charleys Cheesesteaks" value={sub.name}
+                  onChange={(e) => setSub({ ...sub, name: e.target.value })} />
+                <label className="add-lbl">City &amp; state or ZIP</label>
+                <input className="add-input" placeholder="e.g. Lombard, IL or 60148" value={sub.location}
+                  onChange={(e) => setSub({ ...sub, location: e.target.value })} />
+
+                <label className="add-lbl">Price <span className="add-opt">(optional)</span></label>
+                <div className="report-row">
+                  <span className="report-dollar">$</span>
+                  <input className="report-price" type="number" step="0.01" min="0" placeholder="0.00" value={sub.price}
+                    onChange={(e) => setSub({ ...sub, price: e.target.value })} />
+                </div>
+
+                {subState === "error" && <p className="report-err">Pick a food and add either a Maps link or a name + location.</p>}
+                <button className="md-btn primary add-submit" type="submit" disabled={subState === "sending"}>
+                  {subState === "sending" ? "Submitting…" : "Submit for review"}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* PHOTO LIGHTBOX */}
       {lightbox && (
@@ -956,11 +1045,39 @@ const CSS = `
 .rev-more:hover { text-decoration: underline; }
 .photo-cell { cursor: zoom-in; transition: opacity .15s; }
 .photo-cell:hover { opacity: .88; }
+
+/* ---------- ADD A RESTAURANT ---------- */
+.add-spot-row { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; padding: 22px 0 4px; font-family: 'Inter'; font-size: 14px; color: var(--text2); }
+.add-spot-btn { background: var(--surface); color: var(--text); border: 1px solid var(--border-hi); border-radius: 10px; padding: 9px 16px; font-family: 'Inter'; font-weight: 600; font-size: 14px; cursor: pointer; transition: all .15s; }
+.add-spot-btn:hover { border-color: var(--red); color: var(--red); }
+.empty .add-spot-btn { margin-top: 16px; }
+.add-bg { position: fixed; inset: 0; z-index: 120; background: rgba(20,14,8,.5); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fade .18s ease; }
+.add-modal { position: relative; width: 100%; max-width: 440px; max-height: 92vh; overflow-y: auto; background: var(--surface); border-radius: 18px; padding: 26px 24px 24px; box-shadow: 0 30px 80px rgba(20,14,8,.4); animation: pop .25s ease both; }
+.add-modal .sheet-x { background: var(--surface2); color: var(--text2); }
+.add-modal .sheet-x:hover { background: var(--border-hi); }
+.add-h { font-family: 'Inter'; font-weight: 700; font-size: 21px; letter-spacing: -.02em; margin: 0 0 4px; color: var(--text); }
+.add-sub { margin: 0 0 18px; font-size: 13.5px; color: var(--text2); line-height: 1.5; }
+.add-lbl { display: block; font-family: 'Inter'; font-weight: 600; font-size: 12.5px; color: var(--text); margin: 12px 0 6px; }
+.add-opt { color: var(--muted); font-weight: 500; }
+.add-input { width: 100%; background: var(--bg); border: 1px solid var(--border-hi); border-radius: 9px; padding: 10px 12px; font-family: 'Inter'; font-size: 14px; color: var(--text); outline: none; transition: border-color .15s; }
+.add-input:focus { border-color: var(--teal); }
+select.add-input { cursor: pointer; }
+.add-or { display: flex; align-items: center; gap: 10px; margin: 16px 0 4px; }
+.add-or::before, .add-or::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.add-or span { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.add-submit { width: 100%; margin-top: 18px; }
+.add-done { text-align: center; padding: 18px 4px 6px; }
+.add-done h3 { font-family: 'Inter'; font-weight: 700; font-size: 22px; margin: 0 0 8px; color: var(--text); }
+.add-done p { font-size: 14px; color: var(--text2); line-height: 1.5; margin: 0 0 20px; }
 .sheet-nav { display: flex; gap: 4px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; }
 .sheet-nav::-webkit-scrollbar { display: none; }
 .sheet-nav button { flex: 0 0 auto; background: none; border: none; border-bottom: 2px solid transparent; padding: 8px 10px; font-family: 'Inter'; font-weight: 600; font-size: 13.5px; color: var(--text2); cursor: pointer; transition: color .15s, border-color .15s; }
 .sheet-nav button:hover { color: var(--text); }
-.sheet-scroll { flex: 1; overflow-y: auto; scroll-snap-type: y mandatory; }
+.sheet-scroll { flex: 1; overflow-y: auto; scroll-snap-type: y mandatory; background-color: var(--surface); background-image: repeating-linear-gradient(45deg, rgba(226,59,59,.022) 0 16px, transparent 16px 32px); }
+.pane-deco { margin-top: auto; padding-top: 32px; display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: .5; }
+.pane-deco .food-ic { opacity: .14; }
+.deco-word { font-family: 'Monoton', cursive; font-size: 20px; letter-spacing: .04em; opacity: .25; }
+.deco-d { color: var(--text2); } .deco-9 { color: var(--red); margin-left: .06em; }
 .sec-pane { scroll-snap-align: start; scroll-snap-stop: always; min-height: 100%; padding: 22px 20px 28px; border-bottom: 8px solid var(--bg); display: flex; flex-direction: column; }
 .pane-h { font-family: 'Inter'; font-weight: 700; font-size: 17px; letter-spacing: -.01em; color: var(--text); margin: 0 0 14px; }
 .pane-src { font-weight: 500; font-size: 12px; color: var(--muted); }
