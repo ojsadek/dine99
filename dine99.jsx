@@ -203,8 +203,11 @@ export default function Dine99() {
   const [reportNote, setReportNote] = useState("");
   const [reportState, setReportState] = useState(""); // "" | sending | done | error
 
-  // Cheapest-item photo per food (filled lazily as the user opens each food)
+  // Curated stock photo per food (from Pexels, cached in Supabase)
   const [tilePhotos, setTilePhotos] = useState({});
+  useEffect(() => {
+    fetch("/api/foodphotos").then((r) => r.json()).then((d) => { if (d.photos) setTilePhotos(d.photos); }).catch(() => {});
+  }, []);
   // Reviews expand + photo lightbox
   const [expanded, setExpanded] = useState({});
   const [lightbox, setLightbox] = useState(null);
@@ -293,9 +296,6 @@ export default function Dine99() {
           imgUrl: p.photoRef ? photoUrl(p.photoRef) : null,
         }));
         setApiResults(mapped);
-        // cache the cheapest photo for this food's tile
-        const cheapestPhoto = [...mapped].filter((m) => m.imgUrl).sort((a, b) => a.price - b.price)[0];
-        if (cheapestPhoto) setTilePhotos((prev) => ({ ...prev, [selectedFood]: cheapestPhoto.imgUrl }));
       })
       .catch(() => setApiResults([]))
       .finally(() => setLoading(false));
