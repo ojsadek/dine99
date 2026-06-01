@@ -14,7 +14,8 @@ export default async function handler(req, res) {
   const data = await r.json();
 
   if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
-    return res.status(500).json({ error: data.status });
+    console.error("Google Places error:", data.status, data.error_message);
+    return res.status(500).json({ error: data.status, message: data.error_message });
   }
 
   const places = (data.results || []).map((p) => ({
