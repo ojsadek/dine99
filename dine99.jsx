@@ -27,6 +27,29 @@ const FOODS = [
 ];
 const CATS = ["All", "Burgers", "Chicken", "Classics", "Pizza", "Mexican", "Mediterranean", "Sides"];
 
+// Clean, consistent emoji per item — replaces generic stock photos on tiles.
+const EMOJI = {
+  hamburger: "🍔", cheeseburger: "🍔", "grilled-chicken-sandwich": "🍗",
+  "fried-chicken-sandwich": "🍗", "chicken-wings": "🍗", "italian-beef": "🥪",
+  "philly-cheesesteak": "🥖", "hot-dog": "🌭", "pizza-slice": "🍕", "pizza-14": "🍕",
+  tacos: "🌮", burrito: "🌯", shawarma: "🥙", gyros: "🥙", "french-fries": "🍟",
+  "onion-rings": "🧅",
+};
+// Soft pastel gradient per category — warm, designed, on-brand.
+const CAT_GRAD = {
+  Burgers: ["#ffe6c2", "#ffcf9e"],
+  Chicken: ["#fff0bf", "#ffe08a"],
+  Classics: ["#ffd9d6", "#ffbcb5"],
+  Pizza: ["#ffd7c2", "#ffc0a3"],
+  Mexican: ["#d8f0c2", "#bce3a0"],
+  Mediterranean: ["#c7eee8", "#a5e0d6"],
+  Sides: ["#ffe2cc", "#ffd0ad"],
+};
+const gradFor = (food) => {
+  const c = CAT_GRAD[food?.cat] || ["#ffe6c2", "#ffcf9e"];
+  return `linear-gradient(135deg, ${c[0]}, ${c[1]})`;
+};
+
 const NAME_PREFIX = [
   "Lucky", "Star", "Golden", "Route 66", "Sunset", "Liberty", "Capitol",
   "Maple", "Cherry", "Blue Moon", "Coral", "Highway", "Main St.", "Riverside",
@@ -224,7 +247,7 @@ export default function Dine99() {
       {/* ============ SITE HEADER ============ */}
       <header className="site-hdr">
         <div className="hdr-in">
-          <button className="brand" onClick={goHome}><NeonSm /></button>
+          <button className="brand" onClick={goHome}><span className="sign sign-sm"><NeonSm /></span></button>
           <nav className="site-nav">
             <div className="loc-wrap">
               <button className="loc-pill" onClick={() => { setLocOpen((o) => !o); setLocError(""); }}>
@@ -265,11 +288,10 @@ export default function Dine99() {
           <section className="hero">
             <div className="hero-glow" />
             <div className="hero-in">
-              <span className="hero-open">Real prices · Real places</span>
-              <NeonBig />
-              <span className="hero-tag">Food you crave at a price that helps you save</span>
+              <div className="sign"><NeonBig /></div>
+              <h1 className="hero-tag">Food you crave at a price that helps you save</h1>
+              <span className="hero-open">Real prices · real places · near you</span>
             </div>
-            <div className="hero-floor" />
           </section>
 
           {/* Location gate — shown until user sets a location */}
@@ -308,7 +330,9 @@ export default function Dine99() {
               <div className="grid">
                 {filteredFoods.map((f, i) => (
                   <button key={f.id} className="fcard" style={{ animationDelay: `${i * 22}ms` }} onClick={() => openFood(f.id)}>
-                    <div className="fcard-img"><FoodImg kw={f.kw} w={420} h={320} lock={lockFor(f.id)} cls="" label={f.name} /></div>
+                    <div className="fcard-img" style={{ backgroundImage: gradFor(f) }}>
+                      <span className="tile-emoji">{EMOJI[f.id]}</span>
+                    </div>
                     <div className="fcard-txt">
                       <span className="fcard-name">{f.name}</span>
                       <span className="fcard-from">from ${f.base.toFixed(2)}</span>
@@ -321,9 +345,8 @@ export default function Dine99() {
           )}
 
           <footer className="foot">
-            <span className="foot-floor" />
             <div className="foot-in">
-              <NeonSm />
+              <span className="sign sign-sm"><NeonSm /></span>
               <p>Real restaurant data via Google Places · prices estimated by tier</p>
             </div>
           </footer>
@@ -335,7 +358,7 @@ export default function Dine99() {
         <div className="container results slide">
           <div className="reshead">
             <button className="circ" onClick={() => setSelectedFood(null)}><Back /></button>
-            <FoodImg kw={foodObj.kw} w={120} h={120} lock={lockFor(foodObj.id)} cls="reshead-img" label={foodObj.name} />
+            <div className="reshead-img" style={{ backgroundImage: gradFor(foodObj) }}><span className="tile-emoji sm">{EMOJI[foodObj.id]}</span></div>
             <div className="reshead-t">
               <h2>{foodObj.name}</h2>
               <span>{results.length} spots near you · avg ${avg ? avg.toFixed(2) : "—"}</span>
@@ -375,7 +398,7 @@ export default function Dine99() {
                     <div className="vspot-img">
                       {r.imgUrl
                         ? <img className="fimg" loading="lazy" alt={r.name} src={r.imgUrl} />
-                        : <FoodImg kw={foodObj.kw} w={360} h={300} lock={lockFor(r.id)} cls="" label={foodObj.name} />
+                        : <div className="fimg tile" style={{ backgroundImage: gradFor(foodObj) }}><span className="tile-emoji sm">{EMOJI[foodObj.id]}</span></div>
                       }
                       {best && <span className="v-badge">★ BEST PRICE</span>}
                       <span className={`v-heart ${favs[r.id] ? "on" : ""}`} onClick={() => toggleFav(r)}><Heart filled={!!favs[r.id]} /></span>
@@ -410,7 +433,10 @@ export default function Dine99() {
                 return (
                   <div key={r.id} className="vspot">
                     <div className="vspot-img" onClick={() => openFood(r.foodId)} style={{ cursor: "pointer" }}>
-                      <FoodImg kw={food.kw} w={360} h={300} lock={lockFor(r.id)} cls="" label={food.name} />
+                      {r.imgUrl
+                        ? <img className="fimg" loading="lazy" alt={r.name} src={r.imgUrl} />
+                        : <div className="fimg tile" style={{ backgroundImage: gradFor(food) }}><span className="tile-emoji sm">{EMOJI[food.id]}</span></div>
+                      }
                       <span className="v-heart on" onClick={(e) => { e.stopPropagation(); toggleFav(r); }}><Heart filled /></span>
                     </div>
                     <div className="vspot-body">
@@ -433,23 +459,24 @@ const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Monoton&family=Inter:wght@400;500;600;700;800&display=swap');
 
 .d99 {
-  --bg: #f7f7f8;
+  --bg: #fbf6ee;
   --surface: #ffffff;
-  --surface2: #eeeef0;
-  --border: rgba(0,0,0,.08);
-  --border-hi: rgba(0,0,0,.14);
+  --surface2: #f4ece0;
+  --border: rgba(40,30,20,.1);
+  --border-hi: rgba(40,30,20,.17);
   --white: #ffffff;
-  --text: #18181b;
-  --text2: #52525b;
-  --muted: #a1a1aa;
-  --red: #ef4444;
-  --red-dk: #dc2626;
-  --teal: #0d9488;
-  --teal-dk: #0f766e;
-  --yellow: #f59e0b;
+  --text: #241f1a;
+  --text2: #6f6557;
+  --muted: #a99d8b;
+  --red: #e23b3b;
+  --red-dk: #c62f2f;
+  --teal: #0e8f86;
+  --teal-dk: #0b756e;
+  --yellow: #e0900c;
   --pink: #ff4d9d;
-  --night: #0d0d12;
-  --night2: #1a1326;
+  --plaque: #130f20;
+  --night: #130f20;
+  --night2: #1f1733;
 
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--text);
@@ -460,18 +487,19 @@ const CSS = `
 .d99 * { box-sizing: border-box; }
 .d99 button { font-family: inherit; }
 
-/* Dark brand zones (header, hero, footer) — neon needs dark to glow.
-   Re-scope the theme vars to light-on-dark so child rules just work. */
-.site-hdr, .hero, .foot {
-  --bg: rgba(0,0,0,.25);
-  --surface: rgba(255,255,255,.06);
-  --surface2: rgba(255,255,255,.08);
-  --border: rgba(255,255,255,.1);
-  --border-hi: rgba(255,255,255,.18);
-  --text: #f4f4f6;
-  --text2: rgba(255,255,255,.62);
-  --muted: rgba(255,255,255,.42);
-}
+/* ---------- NEON SIGN PLAQUE (the one dark object) ---------- */
+.sign { display: inline-flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 30%, var(--night2), var(--plaque) 80%); border: 1px solid rgba(255,255,255,.08); border-radius: 22px; padding: 22px 40px; box-shadow: 0 18px 50px rgba(19,15,32,.35), inset 0 1px 0 rgba(255,255,255,.06); position: relative; }
+.sign::after { content:''; position:absolute; inset:6px; border:1px solid rgba(255,255,255,.06); border-radius: 16px; pointer-events:none; }
+.sign-sm { padding: 6px 13px; border-radius: 11px; box-shadow: 0 4px 14px rgba(19,15,32,.28); }
+.sign-sm::after { inset: 3px; border-radius: 8px; }
+.brand .neon.sm { font-size: 20px; }
+.foot .neon.sm { font-size: 18px; }
+
+/* ---------- EMOJI TILES ---------- */
+.tile-emoji { font-size: 54px; line-height: 1; filter: drop-shadow(0 3px 6px rgba(80,50,20,.18)); }
+.tile-emoji.sm { font-size: 42px; }
+.fcard-img, .vspot-img .tile, .reshead-img { display: grid; place-items: center; }
+.reshead-img .tile-emoji { font-size: 30px; }
 
 .fimg { display: block; object-fit: cover; width: 100%; height: 100%; background: var(--surface2); }
 .fimg.fb { display: grid; place-items: center; background: linear-gradient(135deg, hsl(calc(var(--g) * 1deg) 60% 88%), hsl(calc(var(--g) * 1deg + 40) 55% 80%)); }
@@ -487,11 +515,11 @@ const CSS = `
 
 /* ---------- LOCATION PICKER ---------- */
 .loc-wrap { position: relative; }
-.loc-pill { display: inline-flex; align-items: center; gap: 6px; font-family: 'Inter'; font-weight: 500; font-size: 13.5px; color: var(--text); background: rgba(255,255,255,.06); border: 1px solid var(--border-hi); padding: 7px 13px; border-radius: 10px; cursor: pointer; transition: background .15s; }
-.loc-pill:hover { background: rgba(255,255,255,.1); }
-.loc-pill svg { width: 14px; height: 14px; color: var(--teal); }
-.loc-caret { font-size: 8px; opacity: .6; margin-left: 2px; }
-.loc-popover { position: absolute; top: calc(100% + 10px); left: 0; width: 270px; background: #17171f; border: 1px solid rgba(255,255,255,.14); border-radius: 14px; padding: 16px; box-shadow: 0 16px 44px rgba(0,0,0,.55); z-index: 50; animation: fade .15s ease; }
+.loc-pill { display: inline-flex; align-items: center; gap: 6px; font-family: 'Inter'; font-weight: 600; font-size: 13.5px; color: var(--text); background: var(--surface); border: 1px solid var(--border-hi); padding: 7px 13px; border-radius: 10px; cursor: pointer; transition: all .15s; box-shadow: 0 1px 2px rgba(40,30,20,.04); }
+.loc-pill:hover { border-color: var(--text2); }
+.loc-pill svg { width: 14px; height: 14px; color: var(--red); }
+.loc-caret { font-size: 8px; opacity: .5; margin-left: 2px; }
+.loc-popover { position: absolute; top: calc(100% + 10px); left: 0; width: 280px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; box-shadow: 0 20px 50px rgba(40,30,20,.2); z-index: 50; animation: fade .15s ease; }
 .near-me-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--red); color: #fff; border: none; border-radius: 10px; padding: 11px; font-family: 'Inter'; font-weight: 600; font-size: 14px; cursor: pointer; transition: background .15s; }
 .near-me-btn:hover { background: var(--red-dk); }
 .near-me-btn:disabled { opacity: .6; cursor: default; }
@@ -509,26 +537,25 @@ const CSS = `
 .loc-err { font-family: 'Inter'; font-size: 12.5px; color: var(--red); margin-top: 10px; text-align: center; }
 
 /* ---------- SITE HEADER ---------- */
-.site-hdr { position: sticky; top: 0; z-index: 30; background: rgba(13,13,18,.85); backdrop-filter: saturate(180%) blur(16px); border-bottom: 1px solid rgba(255,255,255,.08); }
-.hdr-in { max-width: 1120px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 24px; }
+.site-hdr { position: sticky; top: 0; z-index: 30; background: rgba(251,246,238,.82); backdrop-filter: saturate(180%) blur(16px); border-bottom: 1px solid var(--border); }
+.hdr-in { max-width: 1120px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 11px 24px; }
 .brand { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; }
-.site-nav { display: flex; align-items: center; gap: 6px; }
+.site-nav { display: flex; align-items: center; gap: 4px; }
 .nav-link { display: inline-flex; align-items: center; gap: 7px; font-family: 'Inter'; font-weight: 500; font-size: 14px; color: var(--text2); background: none; border: none; border-radius: 10px; padding: 8px 14px; cursor: pointer; transition: all .15s; }
-.nav-link:hover { color: var(--text); background: rgba(255,255,255,.05); }
-.nav-link.on { color: var(--text); background: rgba(255,255,255,.08); }
+.nav-link:hover { color: var(--text); background: rgba(40,30,20,.05); }
+.nav-link.on { color: var(--text); background: rgba(40,30,20,.07); }
 .nav-link.saved svg { width: 17px; height: 17px; color: var(--text2); }
 .nav-link.saved.on svg, .nav-link.saved:hover svg { color: var(--red); }
 
 /* ---------- HERO ---------- */
 .page.fade { animation: fade .32s ease both; }
 @keyframes fade { from { opacity: 0; transform: translateY(7px); } }
-.hero { position: relative; background: var(--night); overflow: hidden; padding: 72px 24px 72px; text-align: center; }
-.hero-glow { position: absolute; inset: 0; background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(255,77,157,.22) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 85% 90%, rgba(45,212,191,.16) 0%, transparent 55%); }
-.hero-in { position: relative; z-index: 2; max-width: 680px; margin: 0 auto; }
-.hero-open { font-family: 'Inter'; font-weight: 600; letter-spacing: .22em; font-size: 11px; text-transform: uppercase; color: #2dd4bf; display: inline-block; margin-bottom: 22px; padding: 6px 14px; border: 1px solid rgba(45,212,191,.3); border-radius: 999px; background: rgba(45,212,191,.07); }
+.hero { position: relative; overflow: hidden; padding: 64px 24px 56px; text-align: center; }
+.hero-glow { position: absolute; inset: 0; background: radial-gradient(ellipse 60% 50% at 50% 22%, rgba(255,77,157,.14) 0%, transparent 60%), radial-gradient(ellipse 55% 45% at 78% 80%, rgba(14,143,134,.1) 0%, transparent 55%); pointer-events: none; }
+.hero-in { position: relative; z-index: 2; max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
 .neon { display: inline-block; }
-.hero-tag { display: block; margin-top: 20px; font-family: 'Inter'; font-weight: 400; font-size: 17px; line-height: 1.5; color: var(--text2); }
-.hero-floor { display: none; }
+.hero-tag { margin: 30px 0 0; font-family: 'Inter'; font-weight: 700; font-size: 28px; line-height: 1.2; letter-spacing: -.02em; color: var(--text); max-width: 560px; }
+.hero-open { font-family: 'Inter'; font-weight: 600; letter-spacing: .14em; font-size: 11px; text-transform: uppercase; color: var(--teal); display: inline-block; margin-top: 16px; }
 
 /* ---------- CONTAINER ---------- */
 .container { max-width: 1120px; margin: 0 auto; padding: 28px 24px 40px; }
@@ -546,12 +573,11 @@ const CSS = `
 
 /* ---------- FOOD CARDS ---------- */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(216px, 1fr)); gap: 16px; }
-.fcard { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; cursor: pointer; padding: 0; text-align: left; transition: transform .18s, box-shadow .18s, border-color .18s; animation: pop .4s ease both; }
+.fcard { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; cursor: pointer; padding: 0; text-align: left; box-shadow: 0 1px 2px rgba(80,50,20,.05); transition: transform .18s, box-shadow .18s, border-color .18s; animation: pop .4s ease both; }
 @keyframes pop { from { opacity: 0; transform: translateY(12px); } }
-.fcard:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(0,0,0,.1); border-color: var(--border-hi); }
+.fcard:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(80,50,20,.14); border-color: var(--border-hi); }
 .fcard:active { transform: translateY(0); }
-.fcard-img { height: 140px; overflow: hidden; position: relative; }
-.fcard-img::after { content:''; position:absolute; inset:0; background: linear-gradient(to top, rgba(0,0,0,.4) 0%, transparent 60%); pointer-events:none; }
+.fcard-img { height: 130px; overflow: hidden; position: relative; }
 .fcard-img .fimg { transition: transform .45s; }
 .fcard:hover .fcard-img .fimg { transform: scale(1.07); }
 .fcard-txt { padding: 13px 15px 15px; display: flex; flex-direction: column; gap: 7px; }
@@ -560,11 +586,11 @@ const CSS = `
 .nores { grid-column: 1/-1; text-align: center; color: var(--muted); padding: 44px 0; font-family: 'Inter'; font-size: 17px; }
 
 /* ---------- FOOTER ---------- */
-.foot { margin-top: 56px; background: var(--night); }
+.foot { margin-top: 56px; background: var(--surface2); border-top: 1px solid var(--border); }
 .foot-floor { display: none; }
-.foot-in { max-width: 1120px; margin: 0 auto; padding: 28px 24px 44px; display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
-.foot-in .neon.sm { font-size: 20px; }
-.foot-in p { margin: 0; color: var(--muted); font-size: 13px; max-width: 520px; font-family: 'Inter'; font-weight: 500; }
+.foot-in { max-width: 1120px; margin: 0 auto; padding: 28px 24px 40px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.foot-in .neon.sm { font-size: 18px; }
+.foot-in p { margin: 0; color: var(--text2); font-size: 13px; max-width: 480px; font-family: 'Inter'; font-weight: 500; line-height: 1.5; }
 
 /* ---------- RESULTS ---------- */
 .results { max-width: 1120px; }
@@ -595,12 +621,11 @@ const CSS = `
 
 /* ---------- SPOTS (vertical cards) ---------- */
 .rlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 14px; }
-.vspot { position: relative; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: transform .18s, box-shadow .18s, border-color .18s; animation: pop .4s ease both; }
-.vspot:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,.1); border-color: var(--border-hi); }
-.vspot.best { border-color: rgba(13,148,136,.45); }
-.vspot.best:hover { box-shadow: 0 12px 30px rgba(13,148,136,.15); }
+.vspot { position: relative; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(80,50,20,.05); transition: transform .18s, box-shadow .18s, border-color .18s; animation: pop .4s ease both; }
+.vspot:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(80,50,20,.14); border-color: var(--border-hi); }
+.vspot.best { border-color: rgba(14,143,134,.5); box-shadow: 0 1px 2px rgba(14,143,134,.1); }
+.vspot.best:hover { box-shadow: 0 12px 30px rgba(14,143,134,.18); }
 .vspot-img { position: relative; height: 140px; overflow: hidden; }
-.vspot-img::after { content:''; position:absolute; inset:0; background: linear-gradient(to top, rgba(0,0,0,.5) 0%, transparent 55%); pointer-events:none; }
 .vspot-img .fimg { width: 100%; height: 100%; transition: transform .45s; }
 .vspot:hover .vspot-img .fimg { transform: scale(1.06); }
 .v-badge { position: absolute; top: 10px; left: 10px; background: var(--teal); color: #fff; font-family: 'Inter'; font-weight: 700; font-size: 10px; letter-spacing: .04em; padding: 4px 9px; border-radius: 6px; z-index: 1; }
