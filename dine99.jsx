@@ -477,6 +477,7 @@ export default function Dine99() {
               <h2>{foodObj.name}</h2>
               <span>{loading ? "Searching nearby…" : `${results.length} spot${results.length === 1 ? "" : "s"} within ${range} mi · avg $${avg ? avg.toFixed(2) : "—"}`}</span>
             </div>
+            <button className="add-top" onClick={openSubmit}>Don’t see your favorite spot?</button>
           </div>
 
           <div className="controls">
@@ -511,7 +512,7 @@ export default function Dine99() {
             <div className="empty">
               <h3>No {foodObj.name.toLowerCase()} spots within {range} mi</h3>
               <p>Try a bigger distance — tap “{range < 20 ? "20 mi" : "a wider area"}” above.</p>
-              <button className="add-spot-btn" onClick={openSubmit}>+ Know a spot? Add it</button>
+              <button className="add-spot-btn" onClick={openSubmit}>Don’t see your favorite spot?</button>
             </div>
           ) : !loading && (
             <div className="rlist">
@@ -539,11 +540,6 @@ export default function Dine99() {
                   </div>
                 );
               })}
-              <div className="add-spot-row">
-                <span>Don’t see a spot that serves {foodObj.name.toLowerCase()}?</span>
-                <button className="add-spot-btn" onClick={openSubmit}>+ Add it</button>
-              </div>
-              <p className="rfoot">Real spots via Google · prices estimated by restaurant tier</p>
             </div>
           )}
         </div>
@@ -648,10 +644,6 @@ export default function Dine99() {
                     {reportState === "error" && <p className="report-err">Enter a valid price and try again.</p>}
                   </form>
                 ))}
-                <div className="pane-deco" aria-hidden="true">
-                  <FoodIcon id={spot.foodId} cat={food?.cat} size={108} />
-                  <span className="deco-word"><span className="deco-d">DINE</span><span className="deco-9">99</span></span>
-                </div>
               </section>
 
               {/* MAP */}
@@ -1047,10 +1039,10 @@ const CSS = `
 .photo-cell:hover { opacity: .88; }
 
 /* ---------- ADD A RESTAURANT ---------- */
-.add-spot-row { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; padding: 22px 0 4px; font-family: 'Inter'; font-size: 14px; color: var(--text2); }
-.add-spot-btn { background: var(--surface); color: var(--text); border: 1px solid var(--border-hi); border-radius: 10px; padding: 9px 16px; font-family: 'Inter'; font-weight: 600; font-size: 14px; cursor: pointer; transition: all .15s; }
+.add-top { margin-left: auto; align-self: center; flex: 0 0 auto; background: var(--surface); color: var(--text2); border: 1px solid var(--border-hi); border-radius: 10px; padding: 9px 15px; font-family: 'Inter'; font-weight: 600; font-size: 13.5px; cursor: pointer; transition: all .15s; white-space: nowrap; }
+.add-top:hover { border-color: var(--red); color: var(--red); }
+.add-spot-btn { margin-top: 16px; background: var(--surface); color: var(--text); border: 1px solid var(--border-hi); border-radius: 10px; padding: 9px 16px; font-family: 'Inter'; font-weight: 600; font-size: 14px; cursor: pointer; transition: all .15s; }
 .add-spot-btn:hover { border-color: var(--red); color: var(--red); }
-.empty .add-spot-btn { margin-top: 16px; }
 .add-bg { position: fixed; inset: 0; z-index: 120; background: rgba(20,14,8,.5); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fade .18s ease; }
 .add-modal { position: relative; width: 100%; max-width: 440px; max-height: 92vh; overflow-y: auto; background: var(--surface); border-radius: 18px; padding: 26px 24px 24px; box-shadow: 0 30px 80px rgba(20,14,8,.4); animation: pop .25s ease both; }
 .add-modal .sheet-x { background: var(--surface2); color: var(--text2); }
@@ -1073,11 +1065,7 @@ select.add-input { cursor: pointer; }
 .sheet-nav::-webkit-scrollbar { display: none; }
 .sheet-nav button { flex: 0 0 auto; background: none; border: none; border-bottom: 2px solid transparent; padding: 8px 10px; font-family: 'Inter'; font-weight: 600; font-size: 13.5px; color: var(--text2); cursor: pointer; transition: color .15s, border-color .15s; }
 .sheet-nav button:hover { color: var(--text); }
-.sheet-scroll { flex: 1; overflow-y: auto; scroll-snap-type: y mandatory; background-color: var(--surface); background-image: repeating-linear-gradient(45deg, rgba(226,59,59,.022) 0 16px, transparent 16px 32px); }
-.pane-deco { margin-top: auto; padding-top: 32px; display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: .5; }
-.pane-deco .food-ic { opacity: .14; }
-.deco-word { font-family: 'Monoton', cursive; font-size: 20px; letter-spacing: .04em; opacity: .25; }
-.deco-d { color: var(--text2); } .deco-9 { color: var(--red); margin-left: .06em; }
+.sheet-scroll { flex: 1; overflow-y: auto; scroll-snap-type: y mandatory; }
 .sec-pane { scroll-snap-align: start; scroll-snap-stop: always; min-height: 100%; padding: 22px 20px 28px; border-bottom: 8px solid var(--bg); display: flex; flex-direction: column; }
 .pane-h { font-family: 'Inter'; font-weight: 700; font-size: 17px; letter-spacing: -.01em; color: var(--text); margin: 0 0 14px; }
 .pane-src { font-weight: 500; font-size: 12px; color: var(--muted); }
