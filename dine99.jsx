@@ -165,6 +165,51 @@ export default function Dine99() {
   const [locLoading, setLocLoading] = useState(false);
   const [locError, setLocError] = useState("");
 
+  // Restaurant detail + price-report
+  const [spot, setSpot] = useState(null);           // the clicked restaurant row
+  const [detail, setDetail] = useState(null);        // Google place details
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportPrice, setReportPrice] = useState("");
+  const [reportNote, setReportNote] = useState("");
+  const [reportState, setReportState] = useState(""); // "" | sending | done | error
+
+  // Cheapest-item photo per food tile (foodId -> imgUrl)
+  const [tilePhotos, setTilePhotos] = useState({});
+
+  function openSpot(r) {
+    setSpot(r); setDetail(null); setReportOpen(false); setReportPrice(""); setReportNote(""); setReportState("");
+    setDetailLoading(true);
+    fetch(`/api/place?id=${encodeURIComponent(r.id)}`)
+      .then((res) => res.json())
+      .then((d) => { if (d.place) setDetail(d.place); })
+      .catch(() => {})
+      .finally(() => setDetailLoading(false));
+  }
+  function closeSpot() { setSpot(null); }
+
+  async function submitReport(e) {
+    e.preventDefault();
+    const price = parseFloat(reportPrice);
+    if (!(price > 0)) { setReportState("error"); return; }
+    setReportState("sending");
+    try {
+      const food = FOODS.find((f) => f.id === spot.foodId);
+      const res = await fetch("/api/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          place_id: spot.id, place_name: spot.name,
+          food_id: spot.foodId, food_name: food?.name,
+          reported_price: price, shown_price: spot.price,
+          note: reportNote, city: userLoc?.city,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      setReportState("done");
+    } catch { setReportState("error"); }
+  }
+
   async function applyNearMe() {
     if (!navigator.geolocation) { setLocError("Geolocation not supported"); return; }
     setLocLoading(true); setLocError("");
@@ -221,6 +266,30 @@ export default function Dine99() {
       .catch(() => setApiResults([]))
       .finally(() => setLoading(false));
   }, [selectedFood, userLoc]);
+
+  // Progressive tile photos: for each food, find the cheapest nearby spot
+  // with a photo and use it. Emoji stays as the instant fallback.
+  useEffect(() => {
+    if (!userLoc) return;
+    let cancelled = false;
+    setTilePhotos({});
+    FOODS.forEach((food) => {
+      fetch(`/api/search?lat=${userLoc.lat}&lng=${userLoc.lng}&radius=16000&keyword=${encodeURIComponent(food.name)}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (cancelled || !d.places?.length) return;
+          const withPhoto = d.places
+            .filter((p) => p.photoRef)
+            .map((p) => ({ ...p, price: estimatePrice(p.priceLevel, food.base) }))
+            .sort((a, b) => a.price - b.price);
+          if (withPhoto[0]) {
+            setTilePhotos((prev) => ({ ...prev, [food.id]: photoUrl(withPhoto[0].photoRef) }));
+          }
+        })
+        .catch(() => {});
+    });
+    return () => { cancelled = true; };
+  }, [userLoc]);
 
   const toggleFav = (r) => setFavs((p) => { const n = { ...p }; if (n[r.id]) delete n[r.id]; else n[r.id] = r; return n; });
 
@@ -331,7 +400,9 @@ export default function Dine99() {
                 {filteredFoods.map((f, i) => (
                   <button key={f.id} className="fcard" style={{ animationDelay: `${i * 22}ms` }} onClick={() => openFood(f.id)}>
                     <div className="fcard-img" style={{ backgroundImage: gradFor(f) }}>
-                      <span className="tile-emoji">{EMOJI[f.id]}</span>
+                      {tilePhotos[f.id]
+                        ? <img className="fimg tile-photo" loading="lazy" alt={f.name} src={tilePhotos[f.id]} />
+                        : <span className="tile-emoji">{EMOJI[f.id]}</span>}
                     </div>
                     <div className="fcard-txt">
                       <span className="fcard-name">{f.name}</span>
@@ -347,7 +418,15 @@ export default function Dine99() {
           <footer className="foot">
             <div className="foot-in">
               <span className="sign sign-sm"><NeonSm /></span>
-              <p>Real restaurant data via Google Places · prices estimated by tier</p>
+              <div className="foot-cols">
+                <p className="foot-disc">Prices are estimates and may not be current or available at all locations. Always confirm with the restaurant. Listings &amp; photos via Google Places.</p>
+                <div className="foot-links">
+                  <a href="mailto:report@dine99.app?subject=DINE%2099%20issue%20report">Report an issue</a>
+                  <span className="foot-dot">·</span>
+                  <a href="mailto:hello@dine99.app">Contact</a>
+                </div>
+                <p className="foot-copy">© {new Date().getFullYear()} DINE 99 · A prototype, not affiliated with any restaurant shown.</p>
+              </div>
             </div>
           </footer>
         </div>
@@ -394,14 +473,14 @@ export default function Dine99() {
                 const best = r.price === cheapest && r.open;
                 const pct = avg ? Math.round(((avg - r.price) / avg) * 100) : 0;
                 return (
-                  <div key={r.id} className={`vspot ${best ? "best" : ""}`}>
+                  <div key={r.id} className={`vspot ${best ? "best" : ""}`} onClick={() => openSpot(r)}>
                     <div className="vspot-img">
                       {r.imgUrl
                         ? <img className="fimg" loading="lazy" alt={r.name} src={r.imgUrl} />
                         : <div className="fimg tile" style={{ backgroundImage: gradFor(foodObj) }}><span className="tile-emoji sm">{EMOJI[foodObj.id]}</span></div>
                       }
                       {best && <span className="v-badge">★ BEST PRICE</span>}
-                      <span className={`v-heart ${favs[r.id] ? "on" : ""}`} onClick={() => toggleFav(r)}><Heart filled={!!favs[r.id]} /></span>
+                      <span className={`v-heart ${favs[r.id] ? "on" : ""}`} onClick={(e) => { e.stopPropagation(); toggleFav(r); }}><Heart filled={!!favs[r.id]} /></span>
                     </div>
                     <div className="vspot-body">
                       <span className="v-name">{r.name}</span>
@@ -449,6 +528,86 @@ export default function Dine99() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ============ RESTAURANT DETAIL MODAL ============ */}
+      {spot && (
+        <div className="modal-bg" onClick={closeSpot}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-x" onClick={closeSpot} aria-label="Close">✕</button>
+
+            <div className="md-head">
+              {(detail?.photoRef || spot.imgUrl)
+                ? <img className="md-img" alt={spot.name} src={detail?.photoRef ? `/api/photo?ref=${encodeURIComponent(detail.photoRef)}&w=600` : spot.imgUrl} />
+                : <div className="md-img tile" style={{ backgroundImage: gradFor(FOODS.find((f)=>f.id===spot.foodId)) }}><span className="tile-emoji">{EMOJI[spot.foodId]}</span></div>}
+            </div>
+
+            <div className="md-body">
+              <h2 className="md-name">{spot.name}</h2>
+              <div className="md-meta">
+                <span className="sstar"><Star /> {spot.rating || "—"}</span>
+                {detail?.reviews ? <><span className="mdot">•</span>{detail.reviews} reviews</> : null}
+                <span className="mdot">•</span>{spot.distance} mi
+                {detail?.open != null && <><span className="mdot">•</span><em className={detail.open ? "op" : "cl"}>{detail.open ? "Open now" : "Closed"}</em></>}
+              </div>
+
+              <div className="md-price-row">
+                <div>
+                  <span className="md-price">${spot.price.toFixed(2)}</span>
+                  <span className="md-price-lbl"> est. for {FOODS.find((f)=>f.id===spot.foodId)?.name}</span>
+                </div>
+              </div>
+
+              {detailLoading && <p className="md-loading">Loading details…</p>}
+
+              {detail && (
+                <div className="md-info">
+                  {detail.address && <div className="md-row"><Pin /> <span>{detail.address}</span></div>}
+                  {detail.phone && <div className="md-row"><span className="md-ic">📞</span> <a href={`tel:${detail.phone}`}>{detail.phone}</a></div>}
+                  {detail.website && <div className="md-row"><span className="md-ic">🌐</span> <a href={detail.website} target="_blank" rel="noreferrer">Website</a></div>}
+                  {detail.hours && (
+                    <details className="md-hours">
+                      <summary>Hours</summary>
+                      <ul>{detail.hours.map((h, i) => <li key={i}>{h}</li>)}</ul>
+                    </details>
+                  )}
+                </div>
+              )}
+
+              <div className="md-actions">
+                <a
+                  className="md-btn primary"
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${detail?.lat && detail?.lng ? `${detail.lat},${detail.lng}` : encodeURIComponent(spot.name)}&destination_place_id=${spot.id}`}
+                  target="_blank" rel="noreferrer"
+                ><Pin /> Get directions</a>
+                <button className="md-btn ghost" onClick={() => { setReportOpen((o) => !o); setReportState(""); }}>
+                  Report a price
+                </button>
+              </div>
+
+              {reportOpen && (
+                reportState === "done" ? (
+                  <div className="report done">✓ Thanks! Your price report was submitted for review.</div>
+                ) : (
+                  <form className="report" onSubmit={submitReport}>
+                    <p className="report-q">What price did you see for {FOODS.find((f)=>f.id===spot.foodId)?.name.toLowerCase()}?</p>
+                    <div className="report-row">
+                      <span className="report-dollar">$</span>
+                      <input className="report-price" type="number" step="0.01" min="0" placeholder="0.00"
+                        value={reportPrice} onChange={(e) => setReportPrice(e.target.value)} autoFocus />
+                      <button className="md-btn primary sm" type="submit" disabled={reportState === "sending"}>
+                        {reportState === "sending" ? "Sending…" : "Submit"}
+                      </button>
+                    </div>
+                    <input className="report-note" placeholder="Note (optional) — e.g. lunch special, size…"
+                      value={reportNote} onChange={(e) => setReportNote(e.target.value)} />
+                    {reportState === "error" && <p className="report-err">Enter a valid price and try again.</p>}
+                  </form>
+                )
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -662,6 +821,65 @@ const CSS = `
 .empty-heart { color: var(--border-hi); display: inline-flex; margin-bottom: 12px; }
 .empty h3 { font-family: 'Inter'; font-weight: 700; font-size: 23px; margin: 0 0 6px; color: var(--text); }
 .empty p { color: var(--muted); font-family: 'Inter'; }
+
+/* ---------- FOOTER (rich) ---------- */
+.foot-in { align-items: flex-start; }
+.foot-cols { display: flex; flex-direction: column; gap: 8px; max-width: 620px; }
+.foot-disc { margin: 0; color: var(--text2); font-size: 12.5px; line-height: 1.55; font-family: 'Inter'; font-weight: 500; }
+.foot-links { display: flex; align-items: center; gap: 8px; }
+.foot-links a { color: var(--text); font-size: 13px; font-weight: 600; text-decoration: none; font-family: 'Inter'; }
+.foot-links a:hover { color: var(--red); }
+.foot-dot { color: var(--muted); }
+.foot-copy { margin: 2px 0 0; color: var(--muted); font-size: 12px; font-family: 'Inter'; }
+
+/* ---------- TILE PHOTO ---------- */
+.tile-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: fade .3s ease; }
+.vspot { cursor: pointer; }
+
+/* ---------- MODAL ---------- */
+.modal-bg { position: fixed; inset: 0; z-index: 100; background: rgba(20,14,8,.5); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fade .18s ease; }
+.modal { position: relative; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; background: var(--surface); border-radius: 20px; box-shadow: 0 30px 80px rgba(20,14,8,.4); animation: pop .25s ease both; }
+.modal-x { position: absolute; top: 12px; right: 12px; z-index: 2; width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(0,0,0,.45); color: #fff; font-size: 14px; cursor: pointer; display: grid; place-items: center; }
+.modal-x:hover { background: rgba(0,0,0,.65); }
+.md-head { height: 180px; overflow: hidden; border-radius: 20px 20px 0 0; }
+.md-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.md-img.tile { display: grid; place-items: center; }
+.md-body { padding: 18px 20px 22px; }
+.md-name { font-family: 'Inter'; font-weight: 700; font-size: 22px; letter-spacing: -.02em; margin: 0 0 6px; color: var(--text); }
+.md-meta { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text2); font-weight: 500; flex-wrap: wrap; margin-bottom: 14px; }
+.md-meta .op { color: var(--teal); font-weight: 600; } .md-meta .cl { color: var(--red); font-weight: 600; }
+.md-price-row { display: flex; align-items: baseline; gap: 8px; padding: 12px 14px; background: var(--surface2); border-radius: 12px; margin-bottom: 14px; }
+.md-price { font-family: 'Inter'; font-weight: 800; font-size: 24px; color: var(--text); letter-spacing: -.02em; }
+.md-price-lbl { font-size: 12.5px; color: var(--text2); font-weight: 500; }
+.md-loading { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+.md-info { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+.md-row { display: flex; align-items: flex-start; gap: 9px; font-size: 13.5px; color: var(--text2); line-height: 1.4; }
+.md-row svg { color: var(--red); flex: 0 0 auto; margin-top: 1px; }
+.md-ic { flex: 0 0 auto; font-size: 13px; }
+.md-row a { color: var(--teal); text-decoration: none; font-weight: 600; }
+.md-hours { font-size: 13px; color: var(--text2); }
+.md-hours summary { cursor: pointer; font-weight: 600; color: var(--text); }
+.md-hours ul { margin: 8px 0 0; padding-left: 16px; line-height: 1.7; }
+.md-actions { display: flex; gap: 10px; }
+.md-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 12px; border-radius: 12px; font-family: 'Inter'; font-weight: 600; font-size: 14.5px; cursor: pointer; text-decoration: none; transition: all .15s; border: 1px solid transparent; }
+.md-btn.primary { background: var(--red); color: #fff; }
+.md-btn.primary:hover { background: var(--red-dk); }
+.md-btn.primary svg { color: #fff; }
+.md-btn.ghost { background: var(--surface); color: var(--text); border-color: var(--border-hi); }
+.md-btn.ghost:hover { background: var(--surface2); }
+.md-btn.sm { flex: 0 0 auto; padding: 10px 16px; }
+
+/* ---------- PRICE REPORT ---------- */
+.report { margin-top: 16px; padding: 16px; background: var(--surface2); border-radius: 14px; animation: fade .2s ease; }
+.report.done { margin-top: 16px; padding: 14px 16px; background: rgba(14,143,134,.1); border: 1px solid rgba(14,143,134,.25); border-radius: 14px; color: var(--teal-dk); font-size: 13.5px; font-weight: 600; font-family: 'Inter'; }
+.report-q { margin: 0 0 10px; font-size: 13.5px; font-weight: 600; color: var(--text); font-family: 'Inter'; }
+.report-row { display: flex; align-items: center; gap: 8px; }
+.report-dollar { font-family: 'Inter'; font-weight: 700; font-size: 18px; color: var(--text2); }
+.report-price { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--border-hi); border-radius: 9px; padding: 10px 12px; font-family: 'Inter'; font-size: 15px; font-weight: 600; color: var(--text); outline: none; }
+.report-price:focus { border-color: var(--teal); }
+.report-note { width: 100%; margin-top: 10px; background: var(--surface); border: 1px solid var(--border-hi); border-radius: 9px; padding: 9px 12px; font-family: 'Inter'; font-size: 13px; color: var(--text); outline: none; }
+.report-note:focus { border-color: var(--teal); }
+.report-err { margin: 8px 0 0; color: var(--red); font-size: 12.5px; font-family: 'Inter'; }
 
 /* ---------- RESPONSIVE ---------- */
 @media (max-width: 620px) {
