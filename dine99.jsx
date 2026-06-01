@@ -195,20 +195,18 @@ export default function Dine99() {
         }));
         setApiResults(mapped);
       })
-      .catch(() => {}) // silent – falls back to sample data
+      .catch(() => setApiResults([]))
       .finally(() => setLoading(false));
   }, [selectedFood, userLoc]);
 
   const toggleFav = (r) => setFavs((p) => { const n = { ...p }; if (n[r.id]) delete n[r.id]; else n[r.id] = r; return n; });
 
-  const sampleResults = useMemo(() => (selectedFood ? generateRestaurants(selectedFood) : []), [selectedFood]);
-  const allResults = apiResults ?? sampleResults;
-
   const results = useMemo(() => {
-    let r = allResults.filter((x) => x.distance <= range);
+    if (!apiResults) return [];
+    let r = apiResults.filter((x) => x.distance <= range);
     if (openOnly) r = r.filter((x) => x.open);
     return [...r].sort((a, b) => sort === "price" ? a.price - b.price : sort === "distance" ? a.distance - b.distance : b.rating - a.rating);
-  }, [allResults, range, sort, openOnly]);
+  }, [apiResults, range, sort, openOnly]);
 
   const foodObj = FOODS.find((f) => f.id === selectedFood);
   const cheapest = results.length ? Math.min(...results.map((r) => r.price)) : null;
@@ -274,34 +272,59 @@ export default function Dine99() {
             <div className="hero-floor" />
           </section>
 
-          <div className="container">
-            <div className="cats">
-              {CATS.map((c) => (
-                <button key={c} className={`cat ${cat === c ? "on" : ""}`} onClick={() => setCat(c)}>{c}</button>
-              ))}
-            </div>
-
-            <h2 className="sec">What sounds good?</h2>
-
-            <div className="grid">
-              {filteredFoods.map((f, i) => (
-                <button key={f.id} className="fcard" style={{ animationDelay: `${i * 22}ms` }} onClick={() => openFood(f.id)}>
-                  <div className="fcard-img"><FoodImg kw={f.kw} w={420} h={320} lock={lockFor(f.id)} cls="" label={f.name} /></div>
-                  <div className="fcard-txt">
-                    <span className="fcard-name">{f.name}</span>
-                    <span className="fcard-from">from ${f.base.toFixed(2)}</span>
-                  </div>
+          {/* Location gate — shown until user sets a location */}
+          {!userLoc ? (
+            <div className="loc-gate">
+              <div className="loc-gate-box">
+                <Pin />
+                <h2>Where are you?</h2>
+                <p>We need your location to find real restaurants near you.</p>
+                <button className="near-me-btn wide" onClick={applyNearMe} disabled={locLoading}>
+                  <Pin /> {locLoading ? "Locating…" : "Use my location"}
                 </button>
-              ))}
-              {filteredFoods.length === 0 && <div className="nores">Nothing in this category yet.</div>}
+                <div className="loc-divider"><span>or enter a city</span></div>
+                <form className="loc-form" onSubmit={applyCity}>
+                  <input
+                    className="loc-input"
+                    placeholder="Chicago, IL"
+                    value={locInput}
+                    onChange={(e) => setLocInput(e.target.value)}
+                  />
+                  <button className="loc-go" type="submit" disabled={locLoading}>Go</button>
+                </form>
+                {locError && <p className="loc-err">{locError}</p>}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="container">
+              <div className="cats">
+                {CATS.map((c) => (
+                  <button key={c} className={`cat ${cat === c ? "on" : ""}`} onClick={() => setCat(c)}>{c}</button>
+                ))}
+              </div>
+
+              <h2 className="sec">What sounds good?</h2>
+
+              <div className="grid">
+                {filteredFoods.map((f, i) => (
+                  <button key={f.id} className="fcard" style={{ animationDelay: `${i * 22}ms` }} onClick={() => openFood(f.id)}>
+                    <div className="fcard-img"><FoodImg kw={f.kw} w={420} h={320} lock={lockFor(f.id)} cls="" label={f.name} /></div>
+                    <div className="fcard-txt">
+                      <span className="fcard-name">{f.name}</span>
+                      <span className="fcard-from">from ${f.base.toFixed(2)}</span>
+                    </div>
+                  </button>
+                ))}
+                {filteredFoods.length === 0 && <div className="nores">Nothing in this category yet.</div>}
+              </div>
+            </div>
+          )}
 
           <footer className="foot">
             <span className="foot-floor" />
             <div className="foot-in">
               <NeonSm />
-              <p>A prototype · sample listings shown. Wire in a live places &amp; pricing feed to serve it for real.</p>
+              <p>Real restaurant data via Google Places · prices estimated by tier</p>
             </div>
           </footer>
         </div>
@@ -368,11 +391,7 @@ export default function Dine99() {
                   </div>
                 );
               })}
-              <p className="rfoot">
-                {apiResults
-                  ? `Real spots via Google · prices are estimates based on restaurant tier`
-                  : `Sample listings · share location for real spots near you`}
-              </p>
+              <p className="rfoot">Real spots via Google · prices estimated by restaurant tier</p>
             </div>
           )}
         </div>
@@ -583,6 +602,14 @@ const CSS = `
 .vspot.best .v-price { color: var(--teal-dk); }
 .v-save { font-family: 'Fredoka'; font-weight: 600; font-size: 11px; color: #fff; background: var(--teal); padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
 .rfoot { grid-column: 1 / -1; text-align: center; font-size: 12.5px; color: var(--muted); padding: 12px 0 2px; font-family: 'Fredoka'; }
+
+/* ---------- LOCATION GATE ---------- */
+.loc-gate { display: flex; justify-content: center; align-items: flex-start; padding: 48px 24px 80px; }
+.loc-gate-box { background: var(--night); border: 2px solid rgba(255,255,255,.12); border-radius: 24px; padding: 36px 32px; max-width: 380px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+.loc-gate-box > svg { color: var(--yellow); width: 32px; height: 32px; margin-bottom: 12px; }
+.loc-gate-box h2 { font-family: 'Fredoka'; font-weight: 700; font-size: 28px; color: #fff; margin: 0 0 8px; }
+.loc-gate-box p { font-family: 'Fredoka'; font-size: 15px; color: rgba(255,255,255,.55); margin: 0 0 22px; }
+.near-me-btn.wide { width: 100%; }
 
 /* ---------- LOADING ---------- */
 .loading-bar { text-align: center; padding: 48px 22px; font-family: 'Fredoka'; font-weight: 600; font-size: 16px; color: var(--teal-dk); animation: pulse 1.4s ease-in-out infinite; }
