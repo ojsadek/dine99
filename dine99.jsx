@@ -184,9 +184,6 @@ export default function Dine99() {
   const [reportNote, setReportNote] = useState("");
   const [reportState, setReportState] = useState(""); // "" | sending | done | error
 
-  // Cheapest-item photo per food tile (foodId -> imgUrl)
-  const [tilePhotos, setTilePhotos] = useState({});
-
   function openSpot(r) {
     setSpot(r); setDetail(null); setReportOpen(false); setReportPrice(""); setReportNote(""); setReportState("");
     setDetailLoading(true);
@@ -276,30 +273,6 @@ export default function Dine99() {
       .catch(() => setApiResults([]))
       .finally(() => setLoading(false));
   }, [selectedFood, userLoc]);
-
-  // Progressive tile photos: for each food, find the cheapest nearby spot
-  // with a photo and use it. Emoji stays as the instant fallback.
-  useEffect(() => {
-    if (!userLoc) return;
-    let cancelled = false;
-    setTilePhotos({});
-    FOODS.forEach((food) => {
-      fetch(`/api/search?lat=${userLoc.lat}&lng=${userLoc.lng}&radius=32187&keyword=${encodeURIComponent(food.name)}`)
-        .then((r) => r.json())
-        .then((d) => {
-          if (cancelled || !d.places?.length) return;
-          const withPhoto = d.places
-            .filter((p) => p.photoRef)
-            .map((p) => ({ ...p, price: estimatePrice(p.priceLevel, food.base) }))
-            .sort((a, b) => a.price - b.price);
-          if (withPhoto[0]) {
-            setTilePhotos((prev) => ({ ...prev, [food.id]: photoUrl(withPhoto[0].photoRef) }));
-          }
-        })
-        .catch(() => {});
-    });
-    return () => { cancelled = true; };
-  }, [userLoc]);
 
   const toggleFav = (r) => setFavs((p) => { const n = { ...p }; if (n[r.id]) delete n[r.id]; else n[r.id] = r; return n; });
 
@@ -410,9 +383,7 @@ export default function Dine99() {
                 {filteredFoods.map((f, i) => (
                   <button key={f.id} className="fcard" style={{ animationDelay: `${i * 22}ms` }} onClick={() => openFood(f.id)}>
                     <div className="fcard-img" style={{ backgroundImage: gradFor(f) }}>
-                      {tilePhotos[f.id]
-                        ? <img className="fimg tile-photo" loading="lazy" alt={f.name} src={tilePhotos[f.id]} />
-                        : <span className="tile-icon"><FoodIcon cat={f.cat} /></span>}
+                      <span className="tile-icon"><FoodIcon cat={f.cat} /></span>
                     </div>
                     <div className="fcard-txt">
                       <span className="fcard-name">{f.name}</span>
@@ -892,13 +863,13 @@ const CSS = `
 .tile-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: fade .3s ease; }
 .vspot { cursor: pointer; }
 
-/* ---------- FLOATING SHEET ---------- */
-.sheet-bg { position: fixed; inset: 0; z-index: 100; background: rgba(20,14,8,.5); backdrop-filter: blur(3px); display: flex; align-items: flex-end; justify-content: center; animation: fade .18s ease; }
-.sheet { position: relative; width: 100%; max-width: 560px; height: 88vh; background: var(--surface); border-radius: 22px 22px 0 0; box-shadow: 0 -10px 60px rgba(20,14,8,.4); display: flex; flex-direction: column; overflow: hidden; animation: sheetup .28s cubic-bezier(.2,.8,.2,1) both; }
-@keyframes sheetup { from { transform: translateY(100%); } }
-.sheet-top { position: relative; padding: 10px 20px 0; border-bottom: 1px solid var(--border); }
-.sheet-grab { width: 38px; height: 4px; border-radius: 999px; background: var(--border-hi); margin: 2px auto 12px; }
-.sheet-x { position: absolute; top: 12px; right: 16px; width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--surface2); color: var(--text2); font-size: 13px; cursor: pointer; display: grid; place-items: center; }
+/* ---------- RIGHT-SIDE DRAWER ---------- */
+.sheet-bg { position: fixed; inset: 0; z-index: 100; background: rgba(20,14,8,.45); backdrop-filter: blur(2px); display: flex; justify-content: flex-end; animation: fade .18s ease; }
+.sheet { position: relative; width: 460px; max-width: 92vw; height: 100vh; background: var(--surface); box-shadow: -16px 0 60px rgba(20,14,8,.35); display: flex; flex-direction: column; overflow: hidden; animation: drawerin .3s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes drawerin { from { transform: translateX(100%); } }
+.sheet-top { position: relative; padding: 18px 22px 0; border-bottom: 1px solid var(--border); }
+.sheet-grab { display: none; }
+.sheet-x { position: absolute; top: 16px; right: 18px; width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--surface2); color: var(--text2); font-size: 13px; cursor: pointer; display: grid; place-items: center; }
 .sheet-x:hover { background: var(--border-hi); }
 .sheet-title h2 { font-family: 'Inter'; font-weight: 700; font-size: 21px; letter-spacing: -.02em; margin: 0 40px 4px 0; color: var(--text); }
 .sheet-sub { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text2); font-weight: 500; flex-wrap: wrap; }
