@@ -144,11 +144,30 @@ const ICON_PATHS = {
   Sides: <><path d="M7 9l.7-3 2 .6M10 8.5 11.8 5l2 .8M14 8.2 16.5 6l1.6 1.6"/><path d="M5.5 9h13l-1.4 9.3a2 2 0 0 1-2 1.7H8.9a2 2 0 0 1-2-1.7z"/></>,
   default: <><path d="M7 3v8M9.5 3v8M7 11v8M9.5 11v8M8.25 3v16"/><path d="M16 3c-1.6 1-2.2 3-2.2 5.2 0 1.7 1 2.8 2.2 2.8v8"/></>,
 };
-const FoodIcon = ({ cat, size = 52 }) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    {ICON_PATHS[cat] || ICON_PATHS.default}
-  </svg>
-);
+// Per-item icon from Iconify's fluent-emoji-high-contrast set (verified to exist).
+const FOOD_ICON = {
+  hamburger: "hamburger", cheeseburger: "hamburger",
+  "grilled-chicken-sandwich": "poultry-leg", "fried-chicken-sandwich": "poultry-leg", "chicken-wings": "poultry-leg",
+  "italian-beef": "sandwich", "philly-cheesesteak": "sandwich", "hot-dog": "hot-dog",
+  "pizza-slice": "pizza", "pizza-14": "pizza", tacos: "taco", burrito: "burrito",
+  shawarma: "flatbread", gyros: "flatbread", "french-fries": "french-fries", "onion-rings": "onion",
+};
+function FoodIcon({ id, cat, size = 52 }) {
+  const [err, setErr] = useState(false);
+  const name = FOOD_ICON[id];
+  if (name && !err) {
+    return (
+      <img className="food-ic" width={size} height={size} alt="" aria-hidden="true"
+        src={`https://api.iconify.design/fluent-emoji-high-contrast:${name}.svg?color=%23704826`}
+        onError={() => setErr(true)} />
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      {ICON_PATHS[cat] || ICON_PATHS.default}
+    </svg>
+  );
+}
 
 const MAPS_EMBED_KEY = process.env.NEXT_PUBLIC_MAPS_EMBED_KEY;
 
@@ -383,7 +402,7 @@ export default function Dine99() {
                 {filteredFoods.map((f, i) => (
                   <button key={f.id} className="fcard" style={{ animationDelay: `${i * 22}ms` }} onClick={() => openFood(f.id)}>
                     <div className="fcard-img" style={{ backgroundImage: gradFor(f) }}>
-                      <span className="tile-icon"><FoodIcon cat={f.cat} /></span>
+                      <span className="tile-icon"><FoodIcon id={f.id} cat={f.cat} /></span>
                     </div>
                     <div className="fcard-txt">
                       <span className="fcard-name">{f.name}</span>
@@ -418,7 +437,7 @@ export default function Dine99() {
         <div className="container results slide">
           <div className="reshead">
             <button className="circ" onClick={() => setSelectedFood(null)}><Back /></button>
-            <div className="reshead-img" style={{ backgroundImage: gradFor(foodObj) }}><span className="tile-icon"><FoodIcon cat={foodObj.cat} size={30} /></span></div>
+            <div className="reshead-img" style={{ backgroundImage: gradFor(foodObj) }}><span className="tile-icon"><FoodIcon id={foodObj.id} cat={foodObj.cat} size={30} /></span></div>
             <div className="reshead-t">
               <h2>{foodObj.name}</h2>
               <span>{results.length} spots near you · avg ${avg ? avg.toFixed(2) : "—"}</span>
@@ -458,7 +477,7 @@ export default function Dine99() {
                     <div className="vspot-img">
                       {r.imgUrl
                         ? <img className="fimg" loading="lazy" alt={r.name} src={r.imgUrl} />
-                        : <div className="fimg tile" style={{ backgroundImage: gradFor(foodObj) }}><span className="tile-icon"><FoodIcon cat={foodObj.cat} size={40} /></span></div>
+                        : <div className="fimg tile" style={{ backgroundImage: gradFor(foodObj) }}><span className="tile-icon"><FoodIcon id={foodObj.id} cat={foodObj.cat} size={40} /></span></div>
                       }
                       {best && <span className="v-badge">★ BEST PRICE</span>}
                       <span className={`v-heart ${favs[r.id] ? "on" : ""}`} onClick={(e) => { e.stopPropagation(); toggleFav(r); }}><Heart filled={!!favs[r.id]} /></span>
@@ -495,7 +514,7 @@ export default function Dine99() {
                     <div className="vspot-img" onClick={() => openFood(r.foodId)} style={{ cursor: "pointer" }}>
                       {r.imgUrl
                         ? <img className="fimg" loading="lazy" alt={r.name} src={r.imgUrl} />
-                        : <div className="fimg tile" style={{ backgroundImage: gradFor(food) }}><span className="tile-icon"><FoodIcon cat={food.cat} size={40} /></span></div>
+                        : <div className="fimg tile" style={{ backgroundImage: gradFor(food) }}><span className="tile-icon"><FoodIcon id={food.id} cat={food.cat} size={40} /></span></div>
                       }
                       <span className="v-heart on" onClick={(e) => { e.stopPropagation(); toggleFav(r); }}><Heart filled /></span>
                     </div>
@@ -685,6 +704,7 @@ const CSS = `
 
 /* ---------- ICON TILES ---------- */
 .tile-icon { display: grid; place-items: center; color: rgba(90,55,25,.5); }
+.food-ic { display: block; opacity: .85; }
 .fcard-img, .vspot-img .tile, .reshead-img, .md-img.tile { display: grid; place-items: center; }
 
 .fimg { display: block; object-fit: cover; width: 100%; height: 100%; background: var(--surface2); }
