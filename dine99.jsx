@@ -474,7 +474,7 @@ export default function Dine99() {
             <div className="hero-in">
               <NeonBig />
               <h1 className="hero-tag">Eat your cravings, not your savings</h1>
-              <span className="hero-open">Compare food prices from nearby eateries at a glance</span>
+              <span className="hero-open">Compare food prices from nearby eateries</span>
             </div>
           </section>
 
