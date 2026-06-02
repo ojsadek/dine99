@@ -171,8 +171,8 @@ function FoodIcon({ id, cat, size = 52 }) {
 
 const MAPS_EMBED_KEY = process.env.NEXT_PUBLIC_MAPS_EMBED_KEY;
 
-const NeonBig = () => <span className="neon"><span className="neon-d">DINE</span><span className="neon-99">99</span></span>;
-const NeonSm = () => <span className="neon sm"><span className="neon-d">DINE</span><span className="neon-99">99</span></span>;
+const NeonBig = () => <span className="logo"><span className="logo-d">DINE</span><span className="logo-n">99</span></span>;
+const NeonSm = () => <span className="logo sm"><span className="logo-d">DINE</span><span className="logo-n">99</span></span>;
 
 export default function Dine99() {
   const [tab, setTab] = useState("menu");
@@ -351,7 +351,7 @@ export default function Dine99() {
       {/* ============ SITE HEADER ============ */}
       <header className="site-hdr">
         <div className="hdr-in">
-          <button className="brand" onClick={goHome}><span className="sign sign-sm"><NeonSm /></span></button>
+          <button className="brand" onClick={goHome}><NeonSm /></button>
           <nav className="site-nav">
             <div className="loc-wrap">
               <button className="loc-pill" onClick={() => { setLocOpen((o) => !o); setLocError(""); }}>
@@ -392,7 +392,7 @@ export default function Dine99() {
           <section className="hero">
             <div className="hero-glow" />
             <div className="hero-in">
-              <div className="sign"><NeonBig /></div>
+              <NeonBig />
               <h1 className="hero-tag">Food you crave at a price that helps you save</h1>
               <span className="hero-open">Real prices · real places · near you</span>
             </div>
@@ -452,7 +452,7 @@ export default function Dine99() {
 
           <footer className="foot">
             <div className="foot-in">
-              <span className="sign sign-sm"><NeonSm /></span>
+              <NeonSm />
               <div className="foot-cols">
                 <p className="foot-disc">Prices are estimates and may not be current or available at all locations. Always confirm with the restaurant. Listings via Google Places · food photos via <a href="https://www.pexels.com" target="_blank" rel="noreferrer">Pexels</a>.</p>
                 <div className="foot-links">
@@ -813,14 +813,6 @@ const CSS = `
 .d99 * { box-sizing: border-box; }
 .d99 button { font-family: inherit; }
 
-/* ---------- NEON SIGN PLAQUE (the one dark object) ---------- */
-.sign { display: inline-flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 30%, var(--night2), var(--plaque) 80%); border: 1px solid rgba(255,255,255,.08); border-radius: 22px; padding: 22px 40px; box-shadow: 0 18px 50px rgba(19,15,32,.35), inset 0 1px 0 rgba(255,255,255,.06); position: relative; }
-.sign::after { content:''; position:absolute; inset:6px; border:1px solid rgba(255,255,255,.06); border-radius: 16px; pointer-events:none; }
-.sign-sm { padding: 6px 13px; border-radius: 11px; box-shadow: 0 4px 14px rgba(19,15,32,.28); }
-.sign-sm::after { inset: 3px; border-radius: 8px; }
-.brand .neon.sm { font-size: 20px; }
-.foot .neon.sm { font-size: 18px; }
-
 /* ---------- ICON TILES ---------- */
 .tile-icon { display: grid; place-items: center; color: rgba(90,55,25,.5); }
 .food-ic { display: block; opacity: .85; }
@@ -830,13 +822,11 @@ const CSS = `
 .fimg.fb { display: grid; place-items: center; background: linear-gradient(135deg, hsl(calc(var(--g) * 1deg) 60% 88%), hsl(calc(var(--g) * 1deg + 40) 55% 80%)); }
 .fimg.fb span { font-family: 'Inter'; color: rgba(0,0,0,.55); font-weight: 600; font-size: 15px; padding: 8px; text-align: center; }
 
-/* ---------- NEON WORDMARK ---------- */
-.neon { font-family: 'Monoton', cursive; font-size: 54px; line-height: .9; letter-spacing: .02em; }
-.neon.sm { font-size: 26px; }
-.neon-d { color: #fff0f6; text-shadow: 0 0 6px #ff8fc4, 0 0 14px #ff4d9d, 0 0 30px #ff4d9d, 0 0 54px rgba(255,77,157,.7); }
-.neon-99 { color: #d8fffb; margin-left: .06em; text-shadow: 0 0 6px #7df5ec, 0 0 14px #15c5bd, 0 0 32px #15c5bd, 0 0 56px rgba(21,197,189,.7); }
-.neon.sm .neon-d { text-shadow: 0 0 4px #ff8fc4, 0 0 10px #ff4d9d, 0 0 18px rgba(255,77,157,.7); }
-.neon.sm .neon-99 { text-shadow: 0 0 4px #7df5ec, 0 0 10px #15c5bd, 0 0 18px rgba(21,197,189,.7); }
+/* ---------- LOGOTYPE (warm modern) ---------- */
+.logo { display: inline-flex; align-items: baseline; gap: .12em; font-family: 'Inter'; font-weight: 800; font-size: 46px; letter-spacing: -.035em; line-height: 1; }
+.logo.sm { font-size: 21px; }
+.logo-d { color: var(--text); }
+.logo-n { color: #fff; background: var(--red); border-radius: .26em; padding: .02em .18em .06em; letter-spacing: -.02em; }
 
 /* ---------- LOCATION PICKER ---------- */
 .loc-wrap { position: relative; }
@@ -876,10 +866,10 @@ const CSS = `
 .page.fade { animation: fade .32s ease both; }
 @keyframes fade { from { opacity: 0; transform: translateY(7px); } }
 .hero { position: relative; overflow: hidden; padding: 64px 24px 56px; text-align: center; }
-.hero-glow { position: absolute; inset: 0; background: radial-gradient(ellipse 60% 50% at 50% 22%, rgba(255,77,157,.14) 0%, transparent 60%), radial-gradient(ellipse 55% 45% at 78% 80%, rgba(14,143,134,.1) 0%, transparent 55%); pointer-events: none; }
+.hero-glow { position: absolute; inset: 0; background: radial-gradient(ellipse 60% 50% at 50% 24%, rgba(226,59,59,.08) 0%, transparent 60%), radial-gradient(ellipse 55% 45% at 78% 80%, rgba(14,143,134,.07) 0%, transparent 55%); pointer-events: none; }
 .hero-in { position: relative; z-index: 2; max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
-.neon { display: inline-block; }
-.hero-tag { margin: 30px 0 0; font-family: 'Inter'; font-weight: 700; font-size: 28px; line-height: 1.2; letter-spacing: -.02em; color: var(--text); max-width: 560px; }
+.hero .logo { font-size: 60px; }
+.hero-tag { margin: 26px 0 0; font-family: 'Inter'; font-weight: 700; font-size: 28px; line-height: 1.2; letter-spacing: -.02em; color: var(--text); max-width: 560px; }
 .hero-open { font-family: 'Inter'; font-weight: 600; letter-spacing: .14em; font-size: 11px; text-transform: uppercase; color: var(--teal); display: inline-block; margin-top: 16px; }
 
 /* ---------- CONTAINER ---------- */
@@ -914,7 +904,7 @@ const CSS = `
 .foot { margin-top: 56px; background: var(--surface2); border-top: 1px solid var(--border); }
 .foot-floor { display: none; }
 .foot-in { max-width: 1120px; margin: 0 auto; padding: 28px 24px 40px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
-.foot-in .neon.sm { font-size: 18px; }
+.foot-in .logo.sm { font-size: 19px; }
 .foot-in p { margin: 0; color: var(--text2); font-size: 13px; max-width: 480px; font-family: 'Inter'; font-weight: 500; line-height: 1.5; }
 
 /* ---------- RESULTS ---------- */
@@ -1131,7 +1121,7 @@ select.add-input { cursor: pointer; }
 /* ---------- RESPONSIVE ---------- */
 @media (max-width: 620px) {
   .hdr-in { flex-wrap: wrap; gap: 10px; padding: 10px 16px; }
-  .neon { font-size: 42px; }
+  .hero .logo { font-size: 46px; }
   .hero { padding: 40px 18px 50px; }
   .container { padding: 22px 16px 36px; }
   .grid { grid-template-columns: 1fr 1fr; gap: 12px; }
