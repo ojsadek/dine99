@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 
 // ============================================================================
 // DINE 99 — neon retro-diner food finder, as a responsive website.
@@ -170,6 +170,85 @@ function FoodIcon({ id, cat, size = 52 }) {
 }
 
 const MAPS_EMBED_KEY = process.env.NEXT_PUBLIC_MAPS_EMBED_KEY;
+const MAPS_JS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
+
+// Dark map styling to match the theme
+const DARK_MAP_STYLE = [
+  { elementType: "geometry", stylers: [{ color: "#15131f" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#0a0910" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#8a8597" }] },
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#272336" }] },
+  { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#6f6a7d" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#0d1830" }] },
+  { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#2a2640" }] },
+];
+
+let gmapsPromise;
+function loadGoogleMaps(key) {
+  if (typeof window === "undefined") return Promise.reject();
+  if (window.google?.maps) return Promise.resolve();
+  if (gmapsPromise) return gmapsPromise;
+  gmapsPromise = new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${key}`;
+    s.async = true; s.defer = true;
+    s.onload = () => res(); s.onerror = rej;
+    document.head.appendChild(s);
+  });
+  return gmapsPromise;
+}
+
+function ResultsMap({ results, userLoc, cheapest, onPick }) {
+  const ref = useRef(null);
+  const mapRef = useRef(null);
+  const markersRef = useRef([]);
+
+  useEffect(() => {
+    if (!MAPS_JS_KEY) return;
+    let cancelled = false;
+    loadGoogleMaps(MAPS_JS_KEY).then(() => {
+      if (cancelled || !ref.current) return;
+      const g = window.google;
+      if (!mapRef.current) {
+        mapRef.current = new g.maps.Map(ref.current, {
+          center: { lat: userLoc.lat, lng: userLoc.lng },
+          zoom: 12, disableDefaultUI: true, zoomControl: true,
+          clickableIcons: false, styles: DARK_MAP_STYLE,
+        });
+      }
+      markersRef.current.forEach((m) => m.setMap(null));
+      markersRef.current = [];
+      const bounds = new g.maps.LatLngBounds();
+      const you = { lat: userLoc.lat, lng: userLoc.lng };
+      new g.maps.Marker({ position: you, map: mapRef.current, zIndex: 1,
+        icon: { path: g.maps.SymbolPath.CIRCLE, scale: 7, fillColor: "#2bd4c4", fillOpacity: 1, strokeColor: "#0a0910", strokeWeight: 3 } });
+      bounds.extend(you);
+      results.forEach((r) => {
+        if (r.lat == null || r.lng == null) return;
+        const cheap = r.price === cheapest && r.open;
+        const m = new g.maps.Marker({
+          position: { lat: r.lat, lng: r.lng }, map: mapRef.current,
+          title: r.name, zIndex: cheap ? 4 : 2,
+          icon: cheap
+            ? { path: g.maps.SymbolPath.CIRCLE, scale: 11, fillColor: "#ff436b", fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 3 }
+            : { path: g.maps.SymbolPath.CIRCLE, scale: 6.5, fillColor: "#f0eef7", fillOpacity: 1, strokeColor: "#14121c", strokeWeight: 2 },
+        });
+        m.addListener("click", () => onPick(r));
+        markersRef.current.push(m);
+        bounds.extend({ lat: r.lat, lng: r.lng });
+      });
+      if (!bounds.isEmpty()) mapRef.current.fitBounds(bounds, 56);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [results, userLoc, cheapest, onPick]);
+
+  if (!MAPS_JS_KEY) {
+    return <div className="map-need-key">Map view needs a browser Maps key. Add <code>NEXT_PUBLIC_GOOGLE_MAPS_KEY</code> in Vercel.</div>;
+  }
+  return <div className="results-map" ref={ref} />;
+}
 
 const NeonBig = () => <span className="logo"><span className="logo-d">DINE</span><span className="logo-n">99</span></span>;
 const NeonSm = () => <span className="logo sm"><span className="logo-d">DINE</span><span className="logo-n">99</span></span>;
@@ -179,6 +258,7 @@ export default function Dine99() {
   const [selectedFood, setSelectedFood] = useState(null);
   const [cat, setCat] = useState("All");
   const [range, setRange] = useState(5);
+  const [view, setView] = useState("list"); // list | map
   const [sort, setSort] = useState("price");
   const [openOnly, setOpenOnly] = useState(false);
   const [favs, setFavs] = useState({});
@@ -342,7 +422,7 @@ export default function Dine99() {
   const filteredFoods = FOODS.filter((f) => cat === "All" || f.cat === cat);
   const favList = Object.values(favs);
   const goHome = () => { setTab("menu"); setSelectedFood(null); };
-  const openFood = (id) => { setTab("menu"); setSelectedFood(id); setSort("price"); };
+  const openFood = (id) => { setTab("menu"); setSelectedFood(id); setSort("price"); setView("list"); };
 
   return (
     <div className="d99">
@@ -394,7 +474,7 @@ export default function Dine99() {
             <div className="hero-in">
               <NeonBig />
               <h1 className="hero-tag">Eat your cravings, not your savings</h1>
-              <span className="hero-open">Real prices · real places · near you</span>
+              <span className="hero-open">Compare food prices from nearby eateries at a glance</span>
             </div>
           </section>
 
@@ -481,11 +561,17 @@ export default function Dine99() {
           </div>
 
           <div className="controls">
-            <div className="chips">
-              {[["price", "Cheapest"], ["distance", "Closest"], ["rating", "Top rated"]].map(([v, l]) => (
-                <button key={v} className={`chip ${sort === v ? "on" : ""}`} onClick={() => setSort(v)}>{l}</button>
-              ))}
-              <button className={`chip ${openOnly ? "on" : ""}`} onClick={() => setOpenOnly((o) => !o)}>Open now</button>
+            <div className="ctrl-row">
+              <div className="chips">
+                {[["price", "Cheapest"], ["distance", "Closest"], ["rating", "Top rated"]].map(([v, l]) => (
+                  <button key={v} className={`chip ${sort === v ? "on" : ""}`} onClick={() => setSort(v)}>{l}</button>
+                ))}
+                <button className={`chip ${openOnly ? "on" : ""}`} onClick={() => setOpenOnly((o) => !o)}>Open now</button>
+              </div>
+              <div className="view-toggle">
+                <button className={view === "list" ? "on" : ""} onClick={() => setView("list")}>List</button>
+                <button className={view === "map" ? "on" : ""} onClick={() => setView("map")}>Map</button>
+              </div>
             </div>
             <div className="dist">
               <span className="dist-lbl">Distance</span>
@@ -508,13 +594,19 @@ export default function Dine99() {
             </div>
           )}
 
-          {!loading && results.length === 0 ? (
+          {!loading && results.length === 0 && (
             <div className="empty">
               <h3>No {foodObj.name.toLowerCase()} spots within {range} mi</h3>
               <p>Try a bigger distance — tap “{range < 20 ? "20 mi" : "a wider area"}” above.</p>
               <button className="add-spot-btn" onClick={openSubmit}>Missing a spot?</button>
             </div>
-          ) : !loading && (
+          )}
+
+          {!loading && results.length > 0 && view === "map" && (
+            <ResultsMap results={results} userLoc={userLoc} cheapest={cheapest} onPick={openSpot} />
+          )}
+
+          {!loading && results.length > 0 && view === "list" && (
             <div className="rlist">
               {results.map((r) => {
                 const best = r.price === cheapest && r.open;
@@ -926,6 +1018,15 @@ const CSS = `
 .reshead-t span { font-family: 'Inter'; font-weight: 500; font-size: 13.5px; color: var(--text2); }
 
 .controls { position: sticky; top: 64px; z-index: 6; background: linear-gradient(var(--bg) 80%, transparent); padding: 6px 0 14px; margin-bottom: 6px; }
+.ctrl-row { display: flex; align-items: center; gap: 12px; }
+.ctrl-row .chips { flex: 1; min-width: 0; }
+.view-toggle { flex: 0 0 auto; display: inline-flex; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 3px; gap: 2px; }
+.view-toggle button { border: none; background: none; color: var(--text2); font-family: 'Inter'; font-weight: 600; font-size: 13px; padding: 6px 14px; border-radius: 7px; cursor: pointer; transition: all .15s; }
+.view-toggle button:hover { color: var(--text); }
+.view-toggle button.on { background: var(--text); color: var(--bg); }
+.results-map { width: 100%; height: 60vh; min-height: 420px; border-radius: 16px; overflow: hidden; border: 1px solid var(--border); margin-top: 4px; }
+.map-need-key { width: 100%; min-height: 280px; display: grid; place-items: center; text-align: center; padding: 40px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; color: var(--text2); font-family: 'Inter'; font-size: 14px; line-height: 1.6; }
+.map-need-key code { background: var(--surface2); padding: 2px 6px; border-radius: 5px; color: var(--text); font-size: 12.5px; }
 .chips, .dist { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 10px; align-items: center; }
 .chips::-webkit-scrollbar, .dist::-webkit-scrollbar { display: none; }
 .chip { flex: 0 0 auto; border: 1px solid var(--border); background: var(--surface); color: var(--text2); border-radius: 999px; padding: 7px 16px; font-family: 'Inter'; font-weight: 500; font-size: 13.5px; cursor: pointer; transition: all .14s; }
