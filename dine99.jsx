@@ -785,24 +785,24 @@ const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Monoton&family=Inter:wght@400;500;600;700;800&display=swap');
 
 .d99 {
-  --bg: #fbf6ee;
-  --surface: #ffffff;
-  --surface2: #f4ece0;
-  --border: rgba(40,30,20,.1);
-  --border-hi: rgba(40,30,20,.17);
+  --bg: #0d0b16;
+  --surface: #181527;
+  --surface2: #221d39;
+  --border: rgba(255,255,255,.09);
+  --border-hi: rgba(255,255,255,.18);
   --white: #ffffff;
-  --text: #241f1a;
-  --text2: #6f6557;
-  --muted: #a99d8b;
-  --red: #e23b3b;
-  --red-dk: #c62f2f;
-  --teal: #0e8f86;
-  --teal-dk: #0b756e;
-  --yellow: #e0900c;
+  --text: #f4f1ff;
+  --text2: rgba(244,241,255,.62);
+  --muted: rgba(244,241,255,.4);
+  --red: #ff3d71;
+  --red-dk: #f02a60;
+  --teal: #19d3c5;
+  --teal-dk: #15bcb0;
+  --yellow: #ffc42e;
   --pink: #ff4d9d;
-  --plaque: #130f20;
-  --night: #130f20;
-  --night2: #1f1733;
+  --plaque: #0a0814;
+  --night: #0a0814;
+  --night2: #1a1430;
 
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--text);
@@ -822,19 +822,21 @@ const CSS = `
 .fimg.fb { display: grid; place-items: center; background: linear-gradient(135deg, hsl(calc(var(--g) * 1deg) 60% 88%), hsl(calc(var(--g) * 1deg + 40) 55% 80%)); }
 .fimg.fb span { font-family: 'Inter'; color: rgba(0,0,0,.55); font-weight: 600; font-size: 15px; padding: 8px; text-align: center; }
 
-/* ---------- LOGOTYPE (warm modern) ---------- */
-.logo { display: inline-flex; align-items: baseline; gap: .12em; font-family: 'Inter'; font-weight: 800; font-size: 46px; letter-spacing: -.035em; line-height: 1; }
-.logo.sm { font-size: 21px; }
-.logo-d { color: var(--text); }
-.logo-n { color: #fff; background: var(--red); border-radius: .26em; padding: .02em .18em .06em; letter-spacing: -.02em; }
+/* ---------- LOGOTYPE (neon) ---------- */
+.logo { font-family: 'Monoton', cursive; font-size: 48px; line-height: .9; letter-spacing: .02em; }
+.logo.sm { font-size: 24px; }
+.logo-d { color: #fff0f6; text-shadow: 0 0 6px #ff8fc4, 0 0 14px #ff4d9d, 0 0 30px #ff4d9d, 0 0 54px rgba(255,77,157,.7); }
+.logo-n { color: #d8fffb; margin-left: .06em; text-shadow: 0 0 6px #7df5ec, 0 0 14px #19d3c5, 0 0 32px #19d3c5, 0 0 56px rgba(25,211,197,.7); }
+.logo.sm .logo-d { text-shadow: 0 0 4px #ff8fc4, 0 0 10px #ff4d9d, 0 0 18px rgba(255,77,157,.7); }
+.logo.sm .logo-n { text-shadow: 0 0 4px #7df5ec, 0 0 10px #19d3c5, 0 0 18px rgba(25,211,197,.7); }
 
 /* ---------- LOCATION PICKER ---------- */
 .loc-wrap { position: relative; }
-.loc-pill { display: inline-flex; align-items: center; gap: 6px; font-family: 'Inter'; font-weight: 600; font-size: 13.5px; color: var(--text); background: var(--surface); border: 1px solid var(--border-hi); padding: 7px 13px; border-radius: 10px; cursor: pointer; transition: all .15s; box-shadow: 0 1px 2px rgba(40,30,20,.04); }
+.loc-pill { display: inline-flex; align-items: center; gap: 6px; font-family: 'Inter'; font-weight: 600; font-size: 13.5px; color: var(--text); background: var(--surface); border: 1px solid var(--border-hi); padding: 7px 13px; border-radius: 10px; cursor: pointer; transition: all .15s; box-shadow: none; }
 .loc-pill:hover { border-color: var(--text2); }
 .loc-pill svg { width: 14px; height: 14px; color: var(--red); }
 .loc-caret { font-size: 8px; opacity: .5; margin-left: 2px; }
-.loc-popover { position: absolute; top: calc(100% + 10px); left: 0; width: 280px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; box-shadow: 0 20px 50px rgba(40,30,20,.2); z-index: 50; animation: fade .15s ease; }
+.loc-popover { position: absolute; top: calc(100% + 10px); left: 0; width: 280px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; box-shadow: 0 20px 50px rgba(0,0,0,.55); z-index: 50; animation: fade .15s ease; }
 .near-me-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--red); color: #fff; border: none; border-radius: 10px; padding: 11px; font-family: 'Inter'; font-weight: 600; font-size: 14px; cursor: pointer; transition: background .15s; }
 .near-me-btn:hover { background: var(--red-dk); }
 .near-me-btn:disabled { opacity: .6; cursor: default; }
@@ -852,13 +854,13 @@ const CSS = `
 .loc-err { font-family: 'Inter'; font-size: 12.5px; color: var(--red); margin-top: 10px; text-align: center; }
 
 /* ---------- SITE HEADER ---------- */
-.site-hdr { position: sticky; top: 0; z-index: 30; background: rgba(251,246,238,.82); backdrop-filter: saturate(180%) blur(16px); border-bottom: 1px solid var(--border); }
+.site-hdr { position: sticky; top: 0; z-index: 30; background: rgba(13,11,22,.8); backdrop-filter: saturate(180%) blur(16px); border-bottom: 1px solid var(--border); }
 .hdr-in { max-width: 1120px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 11px 24px; }
 .brand { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; }
 .site-nav { display: flex; align-items: center; gap: 4px; }
 .nav-link { display: inline-flex; align-items: center; gap: 7px; font-family: 'Inter'; font-weight: 500; font-size: 14px; color: var(--text2); background: none; border: none; border-radius: 10px; padding: 8px 14px; cursor: pointer; transition: all .15s; }
-.nav-link:hover { color: var(--text); background: rgba(40,30,20,.05); }
-.nav-link.on { color: var(--text); background: rgba(40,30,20,.07); }
+.nav-link:hover { color: var(--text); background: rgba(255,255,255,.06); }
+.nav-link.on { color: var(--text); background: rgba(255,255,255,.1); }
 .nav-link.saved svg { width: 17px; height: 17px; color: var(--text2); }
 .nav-link.saved.on svg, .nav-link.saved:hover svg { color: var(--red); }
 
@@ -866,7 +868,7 @@ const CSS = `
 .page.fade { animation: fade .32s ease both; }
 @keyframes fade { from { opacity: 0; transform: translateY(7px); } }
 .hero { position: relative; overflow: hidden; padding: 64px 24px 56px; text-align: center; }
-.hero-glow { position: absolute; inset: 0; background: radial-gradient(ellipse 60% 50% at 50% 24%, rgba(226,59,59,.08) 0%, transparent 60%), radial-gradient(ellipse 55% 45% at 78% 80%, rgba(14,143,134,.07) 0%, transparent 55%); pointer-events: none; }
+.hero-glow { position: absolute; inset: 0; background: radial-gradient(ellipse 60% 55% at 50% 20%, rgba(255,77,157,.22) 0%, transparent 60%), radial-gradient(ellipse 55% 45% at 80% 88%, rgba(25,211,197,.16) 0%, transparent 55%), radial-gradient(ellipse 50% 40% at 14% 82%, rgba(255,196,46,.1) 0%, transparent 50%); pointer-events: none; }
 .hero-in { position: relative; z-index: 2; max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
 .hero .logo { font-size: 60px; }
 .hero-tag { margin: 26px 0 0; font-family: 'Inter'; font-weight: 700; font-size: 28px; line-height: 1.2; letter-spacing: -.02em; color: var(--text); max-width: 560px; }
@@ -888,9 +890,9 @@ const CSS = `
 
 /* ---------- FOOD CARDS ---------- */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(216px, 1fr)); gap: 16px; }
-.fcard { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; cursor: pointer; padding: 0; text-align: left; box-shadow: 0 1px 2px rgba(80,50,20,.05); transition: transform .18s, box-shadow .18s, border-color .18s; animation: pop .4s ease both; }
+.fcard { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; cursor: pointer; padding: 0; text-align: left; box-shadow: 0 1px 2px rgba(0,0,0,.05); transition: transform .18s, box-shadow .18s, border-color .18s; animation: pop .4s ease both; }
 @keyframes pop { from { opacity: 0; transform: translateY(12px); } }
-.fcard:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(80,50,20,.14); border-color: var(--border-hi); }
+.fcard:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,.14); border-color: var(--border-hi); }
 .fcard:active { transform: translateY(0); }
 .fcard-img { height: 130px; overflow: hidden; position: relative; }
 .fcard-img .fimg { transition: transform .45s; }
@@ -936,8 +938,8 @@ const CSS = `
 
 /* ---------- SPOTS (vertical cards) ---------- */
 .rlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 14px; }
-.vspot { position: relative; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(80,50,20,.05); transition: transform .18s, box-shadow .18s, border-color .18s; animation: pop .4s ease both; }
-.vspot:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(80,50,20,.14); border-color: var(--border-hi); }
+.vspot { position: relative; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.05); transition: transform .18s, box-shadow .18s, border-color .18s; animation: pop .4s ease both; }
+.vspot:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,.14); border-color: var(--border-hi); }
 .vspot.best { border-color: rgba(14,143,134,.5); box-shadow: 0 1px 2px rgba(14,143,134,.1); }
 .vspot.best:hover { box-shadow: 0 12px 30px rgba(14,143,134,.18); }
 .vspot-img { position: relative; height: 140px; overflow: hidden; }
@@ -995,7 +997,7 @@ const CSS = `
 /* ---------- SKELETON LOADING ---------- */
 .vspot.skel { pointer-events: none; }
 .skel-box { height: 140px; }
-.skel-box, .skel-line { background: linear-gradient(90deg, var(--surface2) 25%, rgba(0,0,0,.04) 37%, var(--surface2) 63%); background-size: 400% 100%; animation: shimmer 1.3s ease infinite; border-radius: 6px; }
+.skel-box, .skel-line { background: linear-gradient(90deg, var(--surface2) 25%, rgba(255,255,255,.06) 37%, var(--surface2) 63%); background-size: 400% 100%; animation: shimmer 1.3s ease infinite; border-radius: 6px; }
 .skel-line { height: 11px; margin: 9px 0; } .skel-line.w70 { width: 70%; } .skel-line.w40 { width: 40%; } .skel-line.w50 { width: 50%; }
 @keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 
