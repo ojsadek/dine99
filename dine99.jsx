@@ -393,7 +393,7 @@ export default function Dine99() {
             <div className="hero-glow" />
             <div className="hero-in">
               <NeonBig />
-              <h1 className="hero-tag">Food you crave at a price that helps you save</h1>
+              <h1 className="hero-tag">Eat your cravings, not your savings</h1>
               <span className="hero-open">Real prices · real places · near you</span>
             </div>
           </section>
@@ -556,8 +556,8 @@ export default function Dine99() {
               {favList.map((r) => {
                 const food = FOODS.find((f) => f.id === r.foodId);
                 return (
-                  <div key={r.id} className="vspot">
-                    <div className="vspot-img" onClick={() => openFood(r.foodId)} style={{ cursor: "pointer" }}>
+                  <div key={r.id} className="vspot" onClick={() => openSpot(r)}>
+                    <div className="vspot-img">
                       {r.imgUrl
                         ? <img className="fimg" loading="lazy" alt={r.name} src={r.imgUrl} />
                         : <div className="fimg tile" style={{ backgroundImage: gradFor(food) }}><span className="tile-icon"><FoodIcon id={food.id} cat={food.cat} size={40} /></span></div>
@@ -828,10 +828,10 @@ const CSS = `
 /* ---------- LOGOTYPE (refined neon) ---------- */
 .logo { font-family: 'Monoton', cursive; font-size: 46px; line-height: .9; letter-spacing: .02em; }
 .logo.sm { font-size: 23px; }
-.logo-d { color: #ffeef5; text-shadow: 0 0 5px rgba(255,93,162,.7), 0 0 16px rgba(255,77,157,.45); }
-.logo-n { color: #e3fffb; margin-left: .06em; text-shadow: 0 0 5px rgba(43,212,196,.7), 0 0 16px rgba(43,212,196,.4); }
-.logo.sm .logo-d { text-shadow: 0 0 4px rgba(255,93,162,.6), 0 0 10px rgba(255,77,157,.35); }
-.logo.sm .logo-n { text-shadow: 0 0 4px rgba(43,212,196,.6), 0 0 10px rgba(43,212,196,.3); }
+.logo-d { color: #fff0f6; text-shadow: 0 0 5px #ff8fc4, 0 0 13px rgba(255,77,157,.85), 0 0 26px rgba(255,77,157,.55), 0 0 46px rgba(255,77,157,.32); }
+.logo-n { color: #dafff9; margin-left: .06em; text-shadow: 0 0 5px #7df5ec, 0 0 13px rgba(43,212,196,.85), 0 0 28px rgba(43,212,196,.5), 0 0 48px rgba(43,212,196,.3); }
+.logo.sm .logo-d { text-shadow: 0 0 4px #ff8fc4, 0 0 10px rgba(255,77,157,.7), 0 0 18px rgba(255,77,157,.4); }
+.logo.sm .logo-n { text-shadow: 0 0 4px #7df5ec, 0 0 10px rgba(43,212,196,.7), 0 0 18px rgba(43,212,196,.35); }
 
 /* ---------- LOCATION PICKER ---------- */
 .loc-wrap { position: relative; }
@@ -871,7 +871,7 @@ const CSS = `
 .page.fade { animation: fade .32s ease both; }
 @keyframes fade { from { opacity: 0; transform: translateY(7px); } }
 .hero { position: relative; overflow: hidden; padding: 64px 24px 56px; text-align: center; }
-.hero-glow { position: absolute; inset: 0; background: radial-gradient(ellipse 55% 50% at 50% 16%, rgba(255,77,157,.14) 0%, transparent 62%), radial-gradient(ellipse 50% 42% at 82% 92%, rgba(43,212,196,.1) 0%, transparent 58%); pointer-events: none; }
+.hero-glow { position: absolute; inset: 0; background: radial-gradient(ellipse 55% 50% at 50% 14%, rgba(255,77,157,.2) 0%, transparent 62%), radial-gradient(ellipse 50% 42% at 82% 92%, rgba(43,212,196,.14) 0%, transparent 58%); pointer-events: none; }
 .hero-in { position: relative; z-index: 2; max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
 .hero .logo { font-size: 60px; }
 .hero-tag { margin: 26px 0 0; font-family: 'Inter'; font-weight: 700; font-size: 28px; line-height: 1.2; letter-spacing: -.02em; color: var(--text); max-width: 560px; }
@@ -1011,7 +1011,7 @@ const CSS = `
 .sheet-grab { display: none; }
 .sheet-x { position: absolute; top: 14px; right: 16px; z-index: 5; width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(0,0,0,.5); backdrop-filter: blur(6px); color: #fff; font-size: 13px; cursor: pointer; display: grid; place-items: center; }
 .sheet-x:hover { background: rgba(0,0,0,.7); }
-.sheet-hero { position: relative; height: 200px; flex: 0 0 auto; overflow: hidden; background: var(--surface2); }
+.sheet-hero { position: relative; height: 280px; flex: 0 0 auto; overflow: hidden; background: var(--surface2); }
 .sheet-hero-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .sheet-hero-img.tile { display: grid; place-items: center; color: rgba(90,55,25,.5); }
 .sheet-hero-grad { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.78) 0%, rgba(0,0,0,.1) 50%, rgba(0,0,0,.18) 100%); }
@@ -1061,7 +1061,7 @@ select.add-input { cursor: pointer; }
 .sheet-nav button { flex: 0 0 auto; background: none; border: none; border-bottom: 2px solid transparent; padding: 8px 10px; font-family: 'Inter'; font-weight: 600; font-size: 13.5px; color: var(--text2); cursor: pointer; transition: color .15s, border-color .15s; }
 .sheet-nav button:hover { color: var(--text); }
 .sheet-scroll { flex: 1; overflow-y: auto; scroll-behavior: smooth; }
-.sec-pane { padding: 24px 22px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; scroll-margin-top: 0; }
+.sec-pane { padding: 26px 22px; border-bottom: 8px solid var(--bg); box-shadow: inset 0 -1px 0 var(--border-hi); display: flex; flex-direction: column; scroll-margin-top: 0; }
 .sec-pane:last-child { border-bottom: none; padding-bottom: 36px; }
 .pane-h { font-family: 'Inter'; font-weight: 700; font-size: 17px; letter-spacing: -.01em; color: var(--text); margin: 0 0 14px; }
 .pane-src { font-weight: 500; font-size: 12px; color: var(--muted); }
