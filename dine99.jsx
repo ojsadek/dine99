@@ -42,6 +42,27 @@ const gradFor = (food) => {
   return `linear-gradient(135deg, ${c[0]}, ${c[1]})`;
 };
 
+// National fast-food chains — used only by the "hide chains" filter.
+// Local/independent fast food is NOT matched here.
+const CHAINS = [
+  "mcdonald", "burger king", "wendy", "popeyes", "kfc", "kentucky fried",
+  "chick-fil-a", "chick fil a", "taco bell", "pizza hut", "domino", "little caesar",
+  "papa john", "papa murphy", "subway", "jimmy john", "jersey mike", "arby", "sonic drive",
+  "culver", "five guys", "in-n-out", "in n out", "whataburger", "white castle",
+  "hardee", "carl's jr", "carls jr", "jack in the box", "dairy queen", "chipotle",
+  "panda express", "raising cane", "zaxby", "bojangle", "del taco", "qdoba",
+  "moe's southwest", "firehouse subs", "wingstop", "buffalo wild wings", "dunkin",
+  "panera", "shake shack", "smashburger", "steak 'n shake", "steak n shake", "fatburger",
+  "checkers", "rally's", "el pollo loco", "church's chicken", "long john silver",
+  "sbarro", "portillo", "freddy's", "wienerschnitzel", "cook out", "noodles & company",
+  "auntie anne", "einstein bros", "blaze pizza", "marco's pizza", "mod pizza",
+  "captain d's", "boston market", "krystal", "checkers drive",
+];
+const isChain = (name) => {
+  const n = (name || "").toLowerCase();
+  return CHAINS.some((c) => n.includes(c));
+};
+
 const NAME_PREFIX = [
   "Lucky", "Star", "Golden", "Route 66", "Sunset", "Liberty", "Capitol",
   "Maple", "Cherry", "Blue Moon", "Coral", "Highway", "Main St.", "Riverside",
@@ -259,7 +280,8 @@ export default function Dine99() {
   const [cat, setCat] = useState("All");
   const [range, setRange] = useState(5);
   const [view, setView] = useState("list"); // list | map
-  const [sort, setSort] = useState("price");
+  const [hideChains, setHideChains] = useState(false);
+  const [sort, setSort] = useState("distance");
   const [openOnly, setOpenOnly] = useState(false);
   const [favs, setFavs] = useState({});
 
@@ -341,7 +363,7 @@ export default function Dine99() {
         body: JSON.stringify({
           place_id: spot.id, place_name: spot.name,
           food_id: spot.foodId, food_name: food?.name,
-          reported_price: price, shown_price: spot.price,
+          reported_price: price, shown_price: null,
           note: reportNote, city: userLoc?.city,
         }),
       });
@@ -412,17 +434,16 @@ export default function Dine99() {
     if (!apiResults) return [];
     let r = apiResults.filter((x) => x.distance <= range);
     if (openOnly) r = r.filter((x) => x.open);
-    return [...r].sort((a, b) => sort === "price" ? a.price - b.price : sort === "distance" ? a.distance - b.distance : b.rating - a.rating);
-  }, [apiResults, range, sort, openOnly]);
+    if (hideChains) r = r.filter((x) => !isChain(x.name));
+    return [...r].sort((a, b) => sort === "distance" ? a.distance - b.distance : b.rating - a.rating);
+  }, [apiResults, range, sort, openOnly, hideChains]);
 
   const foodObj = FOODS.find((f) => f.id === selectedFood);
-  const cheapest = results.length ? Math.min(...results.map((r) => r.price)) : null;
-  const avg = results.length ? results.reduce((s, r) => s + r.price, 0) / results.length : null;
 
   const filteredFoods = FOODS.filter((f) => cat === "All" || f.cat === cat);
   const favList = Object.values(favs);
   const goHome = () => { setTab("menu"); setSelectedFood(null); };
-  const openFood = (id) => { setTab("menu"); setSelectedFood(id); setSort("price"); setView("list"); };
+  const openFood = (id) => { setTab("menu"); setSelectedFood(id); setSort("distance"); setView("list"); };
 
   return (
     <div className="d99">
@@ -555,7 +576,7 @@ export default function Dine99() {
             <div className="reshead-img" style={{ backgroundImage: gradFor(foodObj) }}><span className="tile-icon"><FoodIcon id={foodObj.id} cat={foodObj.cat} size={30} /></span></div>
             <div className="reshead-t">
               <h2>{foodObj.name}</h2>
-              <span>{loading ? "Searching nearby…" : `${results.length} spot${results.length === 1 ? "" : "s"} within ${range} mi · avg $${avg ? avg.toFixed(2) : "—"}`}</span>
+              <span>{loading ? "Searching nearby…" : `${results.length} spot${results.length === 1 ? "" : "s"} within ${range} mi`}</span>
             </div>
             <button className="add-top" onClick={openSubmit}>Missing a spot?</button>
           </div>
@@ -563,10 +584,11 @@ export default function Dine99() {
           <div className="controls">
             <div className="ctrl-row">
               <div className="chips">
-                {[["price", "Cheapest"], ["distance", "Closest"], ["rating", "Top rated"]].map(([v, l]) => (
+                {[["distance", "Closest"], ["rating", "Top rated"]].map(([v, l]) => (
                   <button key={v} className={`chip ${sort === v ? "on" : ""}`} onClick={() => setSort(v)}>{l}</button>
                 ))}
                 <button className={`chip ${openOnly ? "on" : ""}`} onClick={() => setOpenOnly((o) => !o)}>Open now</button>
+                <button className={`chip ${hideChains ? "on" : ""}`} onClick={() => setHideChains((h) => !h)}>Hide chains</button>
               </div>
               <div className="view-toggle">
                 <button className={view === "list" ? "on" : ""} onClick={() => setView("list")}>List</button>
@@ -603,35 +625,30 @@ export default function Dine99() {
           )}
 
           {!loading && results.length > 0 && view === "map" && (
-            <ResultsMap results={results} userLoc={userLoc} cheapest={cheapest} onPick={openSpot} />
+            <ResultsMap results={results} userLoc={userLoc} cheapest={null} onPick={openSpot} />
           )}
 
           {!loading && results.length > 0 && view === "list" && (
             <div className="rlist">
-              {results.map((r) => {
-                const best = r.price === cheapest && r.open;
-                const pct = avg ? Math.round(((avg - r.price) / avg) * 100) : 0;
-                return (
-                  <div key={r.id} className={`vspot ${best ? "best" : ""}`} onClick={() => openSpot(r)}>
+              {results.map((r) => (
+                  <div key={r.id} className="vspot" onClick={() => openSpot(r)}>
                     <div className="vspot-img">
                       {r.imgUrl
                         ? <img className="fimg" loading="lazy" alt={r.name} src={r.imgUrl} />
                         : <div className="fimg tile" style={{ backgroundImage: gradFor(foodObj) }}><span className="tile-icon"><FoodIcon id={foodObj.id} cat={foodObj.cat} size={40} /></span></div>
                       }
-                      {best && <span className="v-badge">★ BEST PRICE</span>}
+                      {isChain(r.name) && <span className="v-chip-tag">Chain</span>}
                       <span className={`v-heart ${favs[r.id] ? "on" : ""}`} onClick={(e) => { e.stopPropagation(); toggleFav(r); }}><Heart filled={!!favs[r.id]} /></span>
                     </div>
                     <div className="vspot-body">
                       <span className="v-name">{r.name}</span>
-                      <span className="v-meta"><span className="sstar"><Star /> {r.rating}</span><span className="mdot">•</span>{r.distance} mi<span className="mdot">•</span><em className={r.open ? "op" : "cl"}>{r.open ? "Open" : "Closed"}</em></span>
+                      <span className="v-meta"><span className="sstar"><Star /> {r.rating || "—"}</span><span className="mdot">•</span>{r.distance} mi<span className="mdot">•</span><em className={r.open ? "op" : "cl"}>{r.open ? "Open" : "Closed"}</em></span>
                       <div className="v-foot">
-                        <span className="v-price">${r.price.toFixed(2)}</span>
-                        {pct > 0 && <span className="v-save">{pct}% under avg</span>}
+                        <span className="v-price-none">Price not yet reported</span>
                       </div>
                     </div>
                   </div>
-                );
-              })}
+              ))}
             </div>
           )}
         </div>
@@ -658,8 +675,7 @@ export default function Dine99() {
                     </div>
                     <div className="vspot-body">
                       <span className="v-name">{r.name}</span>
-                      <span className="v-meta"><span className="sstar"><Star /> {r.rating}</span><span className="mdot">•</span>{food.name}<span className="mdot">•</span>{r.distance} mi</span>
-                      <div className="v-foot"><span className="v-price">${r.price.toFixed(2)}</span></div>
+                      <span className="v-meta"><span className="sstar"><Star /> {r.rating || "—"}</span><span className="mdot">•</span>{food.name}<span className="mdot">•</span>{r.distance} mi</span>
                     </div>
                   </div>
                 );
@@ -703,9 +719,12 @@ export default function Dine99() {
               {/* INFO */}
               <section id="sec-info" className="sec-pane">
                 <h3 className="pane-h">Details</h3>
-                <div className="md-price-row">
-                  <span className="md-price">${spot.price.toFixed(2)}</span>
-                  <span className="md-price-lbl">est. for {food?.name}</span>
+                <div className="md-price-row" onClick={() => { setReportOpen(true); setReportState(""); }}>
+                  <div>
+                    <span className="md-price-q">{food?.name} price</span>
+                    <span className="md-price-lbl">No price reported yet — know it?</span>
+                  </div>
+                  <span className="md-price-cta">Add price</span>
                 </div>
                 {detailLoading && <p className="md-loading">Loading details…</p>}
                 <div className="md-info">
@@ -1061,6 +1080,8 @@ const CSS = `
 .v-meta em { font-style: normal; font-weight: 600; } .v-meta .op { color: var(--teal); } .v-meta .cl { color: var(--red); }
 .v-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 11px; margin-top: 11px; border-top: 1px solid var(--border); }
 .v-price { font-family: 'Inter'; font-weight: 700; font-size: 22px; line-height: 1; letter-spacing: -.02em; color: var(--text); font-variant-numeric: tabular-nums; }
+.v-price-none { font-family: 'Inter'; font-weight: 500; font-size: 12.5px; color: var(--muted); }
+.v-chip-tag { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,.6); backdrop-filter: blur(6px); color: rgba(255,255,255,.9); font-family: 'Inter'; font-weight: 600; font-size: 10px; letter-spacing: .03em; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; z-index: 1; }
 .vspot.best .v-price { color: var(--teal); }
 .v-save { font-family: 'Inter'; font-weight: 600; font-size: 11px; color: var(--teal); background: rgba(43,212,196,.08); border: 1px solid rgba(43,212,196,.2); padding: 3px 8px; border-radius: 6px; white-space: nowrap; }
 .rfoot { grid-column: 1 / -1; text-align: center; font-size: 12px; color: var(--muted); padding: 16px 0 2px; font-family: 'Inter'; }
@@ -1166,9 +1187,11 @@ select.add-input { cursor: pointer; }
 .sec-pane:last-child { border-bottom: none; padding-bottom: 36px; }
 .pane-h { font-family: 'Inter'; font-weight: 700; font-size: 17px; letter-spacing: -.01em; color: var(--text); margin: 0 0 14px; }
 .pane-src { font-weight: 500; font-size: 12px; color: var(--muted); }
-.md-price-row { display: flex; align-items: baseline; gap: 8px; padding: 12px 14px; background: var(--surface2); border-radius: 12px; margin-bottom: 14px; }
-.md-price { font-family: 'Inter'; font-weight: 800; font-size: 24px; color: var(--text); letter-spacing: -.02em; }
-.md-price-lbl { font-size: 12.5px; color: var(--text2); font-weight: 500; }
+.md-price-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 13px 15px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 14px; cursor: pointer; transition: border-color .15s; }
+.md-price-row:hover { border-color: var(--border-hi); }
+.md-price-q { display: block; font-family: 'Inter'; font-weight: 700; font-size: 15px; color: var(--text); letter-spacing: -.01em; }
+.md-price-lbl { display: block; font-size: 12.5px; color: var(--text2); font-weight: 500; margin-top: 2px; }
+.md-price-cta { flex: 0 0 auto; font-family: 'Inter'; font-weight: 600; font-size: 13px; color: #fff; background: var(--red); padding: 8px 14px; border-radius: 9px; }
 .md-loading { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
 .md-info { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
 .md-row { display: flex; align-items: flex-start; gap: 9px; font-size: 13.5px; color: var(--text2); line-height: 1.4; }
